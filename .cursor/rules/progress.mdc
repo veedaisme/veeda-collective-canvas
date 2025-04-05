@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- add information on [progress.md](mdc:docs/progress.md) whenever we finish meaningful milestones

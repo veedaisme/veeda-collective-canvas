@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchMyCanvases, createCanvas } from '../lib/api' // Import API functions
 import styles from './index.module.css'; // Import CSS Module
@@ -107,11 +107,17 @@ function IndexComponent() {
         <ul className={styles.canvasList}>
           {canvases.map((canvas) => (
             <li key={canvas.id} className={styles.canvasItem}>
-              {/* TODO: Link to canvas view page later */}
-              <span className={styles.canvasTitle}>{canvas.title}</span>
-              <span className={styles.canvasMeta}>
+              {/* Link to canvas view page */}
+              <Link
+                to="/canvas/$canvasId"
+                params={{ canvasId: canvas.id }}
+                className={styles.canvasLink}
+              >
+                <span className={styles.canvasTitle}>{canvas.title}</span>
+                <span className={styles.canvasMeta}>
                   (ID: {canvas.id}, Created: {new Date(canvas.createdAt).toLocaleString()})
-              </span>
+                </span>
+              </Link>
             </li>
           ))}
         </ul>
