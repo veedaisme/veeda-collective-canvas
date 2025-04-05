@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import ReactFlow, {
     Controls, Background, MiniMap, // Basic React Flow components
     useNodesState, useEdgesState, // Hooks to manage nodes/edges
@@ -10,6 +10,8 @@ import 'reactflow/dist/style.css'; // Default styles for react-flow
 
 import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, Canvas, Block } from '../lib/api'
 import styles from './canvas.$canvasId.module.css';
+import { CanvasHeader } from '../components/CanvasHeader';
+import { CanvasWorkspace } from '../components/CanvasWorkspace';
 
 // --- Helper: Map API Block to ReactFlow Node ---
 const mapBlockToNode = (block: Block): Node => ({
@@ -24,232 +26,165 @@ const mapBlockToNode = (block: Block): Node => ({
 // --- Route Definition ---
 // Loader function to fetch data before the component renders
 const loader = async ({ params }: { params: { canvasId: string } }) => {
-  // Use queryClient from the router context for prefetching (optional but good practice)
-  // const queryClient = Route.router.options.context.queryClient; // Get query client
-  // await queryClient.prefetchQuery({ queryKey: ['canvas', params.canvasId], queryFn: () => fetchCanvasById(params.canvasId) })
-
+  console.log(`[Loader] Fetching canvas ${params.canvasId}`);
   const canvas = await fetchCanvasById(params.canvasId);
   if (!canvas) {
-    // TODO: Could redirect to a 404 page or throw a specific error
     throw new Error('Canvas not found');
   }
   return canvas;
 };
 
 export const Route = createFileRoute('/canvas/$canvasId')({
-  component: CanvasViewComponent,
+  component: CanvasViewPage,
   loader: loader, // Use loader to fetch data
   errorComponent: CanvasErrorComponent, // Component to show on loader error
 })
 
-// --- Components ---
+// --- Page Component ---
 
-function CanvasViewComponent() {
-  const initialCanvas = Route.useLoaderData(); // Get initial data from loader
-  const { canvasId } = Route.useParams(); // Get canvasId from route params
+function CanvasViewPage() {
+  const initialDataFromLoader = Route.useLoaderData(); // Data from loader
+  const { canvasId } = Route.useParams();
   const queryClient = useQueryClient();
 
-  // Title Editing State
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editTitle, setEditTitle] = useState(initialCanvas.title);
-  const [updateTitleError, setUpdateTitleError] = useState<string | null>(null);
+  // *** Use useQuery to subscribe to canvas data ***
+  const { data: canvasData, isLoading: isCanvasLoading, error: canvasError } = useQuery({
+      queryKey: ['canvas', canvasId],
+      queryFn: () => fetchCanvasById(canvasId), // Fetch function
+      initialData: initialDataFromLoader, // Use loader data initially
+      staleTime: 5 * 60 * 1000, // Keep data fresh for 5 mins
+  });
 
-  // React Flow State
-  const initialNodes = initialCanvas.blocks?.map(mapBlockToNode) || [];
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]); // No edges yet
-
-  // State for Undo notification
+  // Undo state remains lifted
   const [undoBlockId, setUndoBlockId] = useState<string | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
 
-  // Reset nodes if initial canvas data changes (e.g., refetch after undo outside component)
-  useEffect(() => {
-    setNodes(initialCanvas.blocks?.map(mapBlockToNode) || []);
-  }, [initialCanvas.blocks, setNodes]);
+  // Create Block Mutation
+  const { mutate: performCreateBlock, isPending: isCreatingBlock } = useMutation({
+    mutationFn: createBlock,
+    onSuccess: (newBlock) => {
+      console.log("Block created:", newBlock);
+      // OPTION 1: Manual Cache Update (optimistic-like)
+      // This is often still good for instant UI feedback
+      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+        if (!oldData) return undefined;
+        return {
+          ...oldData,
+          blocks: [...(oldData.blocks || []), newBlock],
+        };
+      });
+      // OPTION 2: Invalidation (ensures consistency, triggers useQuery refetch)
+      // If using only invalidate, remove setQueryData above.
+      // Keeping both can be okay, invalidate will usually just confirm the manual update.
+      // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
 
-  // Effect to reset editTitle if initialCanvas data changes
-  useEffect(() => {
-    setEditTitle(initialCanvas.title);
-  }, [initialCanvas.title]);
-
-  // --- Mutations ---
-  const { mutate: performUpdateTitle, isPending: isUpdatingTitle } = useMutation({
-    mutationFn: updateCanvasTitle,
-    onSuccess: (updatedData) => {
-      setUpdateTitleError(null);
-      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) =>
-        oldData ? { ...oldData, ...updatedData } : undefined
-      );
-      queryClient.invalidateQueries({ queryKey: ['canvases'] });
-      setIsEditingTitle(false);
+      showUndoNotification(newBlock.id);
     },
     onError: (err) => {
-      setUpdateTitleError(err instanceof Error ? err.message : "Failed to update title.");
+      console.error("Error creating block:", err);
+      alert("Failed to create block");
     },
   });
 
-  const { mutate: performCreateBlock, isPending: isCreatingBlock } = useMutation({
-      mutationFn: createBlock,
-      onSuccess: (newBlock) => {
-        console.log("Block created:", newBlock);
-        const newNode = mapBlockToNode(newBlock);
-        setNodes((nds) => nds.concat(newNode));
-
-        // Show undo notification
-        setUndoBlockId(newBlock.id);
-        // Clear previous timeout if any
-        if (undoTimeoutId) clearTimeout(undoTimeoutId);
-        // Set new timeout to hide notification
-        const timeoutId = setTimeout(() => {
-            setUndoBlockId(null);
-        }, UNDO_GRACE_PERIOD_MS - 1000); // Hide slightly before grace period ends
-        setUndoTimeoutId(timeoutId);
-
-        // Update the main canvas query cache (optional, depends on approach)
-        // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
-      },
-      onError: (err) => {
-          // TODO: Show block creation error
-          console.error("Error creating block:", err);
-          alert("Failed to create block");
-      }
-  });
-
+  // Undo Block Mutation
   const { mutate: performUndoBlockCreation } = useMutation({
       mutationFn: undoBlockCreation,
       onSuccess: (success, blockId) => {
           if (success) {
-              console.log(`Block ${blockId} undone`);
-              setNodes((nds) => nds.filter((node) => node.id !== blockId));
-              // Clear undo notification immediately
+              console.log(`[Page] Block ${blockId} undone successfully.`);
+              // Invalidate canvas query to refetch data for useQuery
+              queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
               setUndoBlockId(null);
               if (undoTimeoutId) clearTimeout(undoTimeoutId);
-              // Optional: Invalidate canvas query if needed
-              // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
           } else {
-              console.warn(`Failed to undo block ${blockId} (likely expired)`);
-              alert("Undo period expired or failed.");
-              // Hide notification if it was still showing for this block
-              if(undoBlockId === blockId) setUndoBlockId(null);
+              handleUndoFail(blockId);
           }
       },
-      onError: (err) => {
-          console.error("Error undoing block creation:", err);
+      onError: (err, blockId) => {
+          console.error(`[Page] Error undoing block creation for ${blockId}:`, err);
           alert("Failed to undo block.");
+          handleUndoFail(blockId);
       }
   });
 
-  // --- Handlers ---
-  const handleEditToggle = () => {
-    if (isEditingTitle) {
-        setEditTitle(initialCanvas.title);
-        setUpdateTitleError(null);
+  // Handler for failed/expired undo
+  const handleUndoFail = (blockId: string) => {
+         console.warn(`[Page] Failed to undo block ${blockId} (likely expired)`);
+         alert("Undo period expired or failed.");
+         if (undoBlockId === blockId) setUndoBlockId(null);
+         if (undoTimeoutId) clearTimeout(undoTimeoutId);
     }
-    setIsEditingTitle(!isEditingTitle);
-  };
 
-  const handleTitleSave = () => {
-    if (editTitle.trim() === initialCanvas.title) {
-        setIsEditingTitle(false);
-        setUpdateTitleError(null);
-        return;
-    }
-    performUpdateTitle({ id: canvasId, title: editTitle.trim() });
-  };
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEditTitle(event.target.value);
-  };
-
-  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') handleTitleSave();
-    else if (event.key === 'Escape') handleEditToggle();
-  };
-
+  // Handler passed to CanvasHeader
   const handleCreateNewBlock = () => {
-      // Create block at a default position for now
-      performCreateBlock({ canvasId, type: 'text', position: { x: 50, y: 50 }, content: { text: 'New Block' }});
+    performCreateBlock({
+      canvasId,
+      type: 'text',
+      position: { x: Math.random() * 200, y: Math.random() * 100 }, // Randomize slightly
+      content: { text: 'New Block' },
+    });
   };
 
+  // Handler for showing undo notification
+  const showUndoNotification = useCallback((blockId: string) => {
+      console.log("[Page] Showing undo for", blockId);
+      setUndoBlockId(blockId);
+      if (undoTimeoutId) clearTimeout(undoTimeoutId);
+      const timeoutId = window.setTimeout(() => {
+          setUndoBlockId(null);
+      }, 30 * 1000 - 1000);
+      setUndoTimeoutId(timeoutId);
+  }, [undoTimeoutId]);
+
+  // Handler for node changes from CanvasWorkspace (e.g., drag stop)
+  const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
+    console.log('Node Drag Stop:', node.id, node.position);
+    // TODO: Implement updateBlockPosition mutation here
+  }, []);
+
+  // Handler for the Undo button click
   const handleUndoClick = () => {
-      if(undoBlockId) {
+      if (undoBlockId) {
           performUndoBlockCreation(undoBlockId);
       }
   };
 
-  // --- Render ---
-  return (
-    <div className={styles.container}>
-      {/* Top Bar: Back Link, Title Edit, Create Button */} 
-      <div className={styles.topBar}>
-            <Link to="/" className={styles.backLink}>&laquo; Back to Canvases</Link>
-            <div className={styles.titleContainer}>
-                {isEditingTitle ? (
-                    <input
-                        type="text"
-                        value={editTitle}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown}
-                        disabled={isUpdatingTitle}
-                        autoFocus
-                        className={styles.titleInput}
-                    />
-                ) : (
-                    <h2 className={styles.title} onClick={() => setIsEditingTitle(true)} title="Click to edit">{initialCanvas.title}</h2>
-                )}
-                {isEditingTitle ? (
-                    <>
-                        <button onClick={handleTitleSave} disabled={isUpdatingTitle || !editTitle.trim()} className={styles.saveButton}>
-                            {isUpdatingTitle ? 'Saving...' : 'Save'}
-                        </button>
-                        <button onClick={handleEditToggle} disabled={isUpdatingTitle} className={styles.cancelButton}>
-                            Cancel
-                        </button>
-                    </>
-                ) : (
-                    <button onClick={handleEditToggle} className={styles.editButton} title="Edit title">
-                        ✏️
-                    </button>
-                )}
-            </div>
-            {updateTitleError && <p className={styles.errorText}>Error: {updateTitleError}</p>}
-            <button onClick={handleCreateNewBlock} disabled={isCreatingBlock} className={styles.createButton}>
-                {isCreatingBlock ? 'Creating Block...' : '+ Add Block'}
-            </button>
-      </div>
+  // Handle loading and error states from useQuery
+  if (isCanvasLoading && !canvasData) { // Check if loading initial data (canvasData is undefined)
+      return <div>Loading Canvas...</div>; // Or a spinner component
+  }
 
-      {/* Undo Notification */} 
-      {undoBlockId && (
+  if (canvasError) {
+      return <CanvasErrorComponent error={canvasError} />;
+  }
+
+  if (!canvasData) {
+      // This case might happen if loader failed but useQuery hasn't errored yet,
+      // or if fetch returns null explicitly after initial load.
+      return <div>Canvas not found or failed to load.</div>;
+  }
+
+  return (
+    <div className={styles.pageContainer}>
+      <CanvasHeader
+        initialCanvas={canvasData} // Pass data from useQuery
+        onCreateBlock={handleCreateNewBlock}
+        isCreatingBlock={isCreatingBlock}
+      />
+      <CanvasWorkspace
+        key={canvasId}
+        initialBlocks={canvasData.blocks || []} // Pass blocks from useQuery data
+        onNodeDragStop={handleNodeDragStop}
+      />
+       {/* Undo Notification */} 
+       {undoBlockId && (
           <div className={styles.undoNotification}>
               <span>Block created.</span>
               <button onClick={handleUndoClick}>Undo</button>
           </div>
-      )}
-
-      {/* React Flow Canvas Area */} 
-      <div className={styles.canvasArea}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          // onConnect={onConnect} // TODO: Add connection logic later
-          fitView // Zoom/pan to fit nodes initially
-          className={styles.reactFlowInstance}
-        >
-          <Controls />
-          <MiniMap />
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-        </ReactFlow>
-      </div>
-
-      {/* <p className={styles.meta}>ID: {initialCanvas.id}</p>
-      <p className={styles.meta}>Created: {new Date(initialCanvas.createdAt).toLocaleString()}</p>
-      <p className={styles.meta}>Last Updated: {new Date(initialCanvas.updatedAt).toLocaleString()}</p>
-      <p className={styles.meta}>Public: {initialCanvas.isPublic ? 'Yes' : 'No'}</p> */} 
+       )}
     </div>
-  )
+  );
 }
 
 // Simple component to display loading errors from the loader

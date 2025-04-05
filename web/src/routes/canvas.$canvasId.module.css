@@ -122,8 +122,20 @@
     cursor: not-allowed;
 }
 
+/* Styles for canvas.$canvasId.tsx PAGE */
+
+/* Container for the whole page view */
+.pageContainer {
+    display: flex;
+    flex-direction: column;
+    /* Height calculated based on root layout header */
+    height: calc(100vh - 61px);
+    overflow: hidden; /* Prevent scrollbars from page layout */
+}
+
+/* Styles for the Undo Notification - now positioned relative to page */
 .undoNotification {
-    position: fixed; /* Or absolute relative to container */
+    position: fixed; /* Use fixed to overlay everything */
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
@@ -136,6 +148,7 @@
     align-items: center;
     gap: 1rem;
     z-index: 1000;
+    opacity: 0.9;
 }
 
 .undoNotification button {
@@ -146,6 +159,11 @@
     cursor: pointer;
     font-size: 0.9em;
     padding: 0;
+}
+
+/* Minimal container style for error component */
+.container {
+    padding: 1.5rem;
 }
 
 .canvasArea {

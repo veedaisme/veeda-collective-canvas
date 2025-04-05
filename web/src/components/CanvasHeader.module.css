@@ -1,0 +1,118 @@
+/* Styles for CanvasHeader.tsx */
+
+.topBar {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1.5rem;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0; /* Prevent top bar from shrinking */
+    gap: 1rem;
+    background-color: #f8f9fa; /* Match root header background */
+}
+
+.backLink {
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+.titleContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-grow: 1; /* Allow title container to take up space */
+    margin: 0; /* Reset margin */
+}
+
+.title {
+    margin-top: 0;
+    margin-bottom: 0;
+    cursor: pointer;
+    flex-grow: 1;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.titleInput {
+    flex-grow: 1;
+    font-size: 1.2rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    min-width: 150px;
+}
+
+/* Basic button styling */
+.editButton,
+.saveButton,
+.cancelButton,
+.createButton {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.editButton:hover,
+.saveButton:hover,
+.cancelButton:hover,
+.createButton:hover {
+    background-color: #e0e0e0;
+}
+
+.saveButton {
+    background-color: #5cb85c;
+    color: white;
+    border-color: #4cae4c;
+}
+.saveButton:hover {
+    background-color: #4cae4c;
+}
+.saveButton:disabled {
+    background-color: #a3d9a3;
+    border-color: #a3d9a3;
+    cursor: not-allowed;
+}
+
+.cancelButton {
+     background-color: #f0ad4e;
+     color: white;
+     border-color: #eea236;
+}
+.cancelButton:hover {
+     background-color: #eea236;
+}
+.cancelButton:disabled {
+     opacity: 0.65;
+     cursor: not-allowed;
+}
+
+.editButton {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    padding: 0 0.5rem;
+}
+
+.createButton {
+    margin-left: auto;
+}
+.createButton:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.errorText {
+    color: #d9534f;
+    font-size: 0.9em;
+    margin-left: 0.5rem; 
+} 

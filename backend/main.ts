@@ -1,8 +1,8 @@
 import { Hono } from "@hono/hono.ts";
 import { createYoga } from "graphql-yoga";
 import { makeExecutableSchema } from "@graphql-tools/schema";
-import { typeDefs } from "./schema.ts";
-import { resolvers } from "./resolvers.ts";
+import { typeDefs } from "./src/graphql/schema.ts";
+import { resolvers } from "./src/graphql/resolvers.ts";
 
 // --- GraphQL Yoga Setup ---
 

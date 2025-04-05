@@ -1,0 +1,39 @@
+/* Styles for CanvasWorkspace.tsx */
+
+.canvasArea {
+    flex-grow: 1; /* Make canvas take remaining space */
+    position: relative; /* Needed if notification is absolute */
+    /* background-color: #f0f0f0; /* Optional background */
+}
+
+.reactFlowInstance {
+    height: 100%;
+    width: 100%;
+}
+
+.undoNotification {
+    position: absolute; /* Position relative to canvasArea */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1000;
+    opacity: 0.9;
+}
+
+.undoNotification button {
+    background: none;
+    border: none;
+    color: #6faaff; /* Light blue */
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 0;
+} 
