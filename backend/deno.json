@@ -1,0 +1,11 @@
+{
+  "tasks": {
+    "dev": "deno run --config deno.json --allow-net --allow-env --allow-read --watch main.ts"
+  },
+  "imports": {
+    "@hono/": "https://deno.land/x/hono@v4.2.9/",
+    "graphql-yoga": "npm:graphql-yoga@^5",
+    "graphql": "npm:graphql@^16",
+    "@graphql-tools/schema": "npm:@graphql-tools/schema@^10"
+  }
+} 
