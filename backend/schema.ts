@@ -1,7 +1,10 @@
+// Remove gql import as makeExecutableSchema parses the raw string
+// import { gql } from "graphql-yoga";
 
-// GraphQL Schema Definition
-export const typeDefs = /* GraphQL */ `
+// GraphQL Schema Definition (Export raw string)
+export const typeDefs = `
   scalar DateTime
+  scalar Json # For flexible content, position, size
 
   type Query {
     """Placeholder query"""
@@ -17,16 +20,37 @@ export const typeDefs = /* GraphQL */ `
     createCanvas(title: String): Canvas
     """Updates the title of an existing canvas"""
     updateCanvasTitle(id: ID!, title: String!): Canvas
-    # Note: deleteCanvas is intentionally omitted based on requirements
+
+    """Creates a new block within a specific canvas"""
+    createBlock(canvasId: ID!, type: String!, position: Json!, content: Json): Block # content optional initially?
+
+    """Removes a block only if created within the grace period (e.g., 30s)"""
+    undoBlockCreation(blockId: ID!): Boolean
+
+    # TODO: Add mutations for updateBlockContent, updateBlockPosition, updateBlockSize later
   }
 
-  """Represents a user's canvas"""
   type Canvas {
     id: ID!
     title: String!
     isPublic: Boolean!
-    createdAt: DateTime! # Using scalar for ISO String
+    createdAt: DateTime!
     updatedAt: DateTime!
-    # TODO: Add blocks, connections relations later
+    """Blocks associated with this canvas"""
+    blocks: [Block!] # Add relation to blocks
+  }
+
+  """Represents a single content block on a canvas"""
+  type Block {
+      id: ID!
+      canvasId: ID!
+      # userId: ID! # Add user relation later if needed for ownership/permissions
+      type: String! # e.g., 'text', 'image', 'link'
+      content: Json! # Flexible content based on type
+      position: Json! # { x: number, y: number }
+      size: Json! # { width: number, height: number } - Define later
+      createdAt: DateTime!
+      updatedAt: DateTime!
+      # Add notes, connections relations later
   }
 `; 

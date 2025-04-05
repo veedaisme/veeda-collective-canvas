@@ -10,12 +10,25 @@ if (!endpoint) {
 const gqlClient = new GraphQLClient(endpoint);
 
 // --- Types (Manual for now, consider codegen later) ---
+// Add Block Type
+export interface Block {
+    id: string;
+    canvasId: string;
+    type: string;
+    content: any; // JSON
+    position: { x: number; y: number }; // JSON
+    size: { width: number; height: number }; // JSON
+    createdAt: string; // DateTime
+    updatedAt: string; // DateTime
+}
+
 export interface Canvas {
   id: string;
   title: string;
   isPublic: boolean;
   createdAt: string; // DateTime scalar serialized as ISO string
   updatedAt: string;
+  blocks?: Block[]; // Add blocks relation (optional as it might not always be fetched)
 }
 
 // --- GraphQL Operations ---
@@ -29,10 +42,12 @@ const GET_MY_CANVASES_QUERY = gql`
       isPublic
       createdAt
       updatedAt
+      # Note: blocks are not fetched in the list view for performance
     }
   }
 `;
 
+// Updated query to fetch blocks as well
 const GET_CANVAS_BY_ID_QUERY = gql`
   query GetCanvasById($id: ID!) {
     canvas(id: $id) {
@@ -41,7 +56,16 @@ const GET_CANVAS_BY_ID_QUERY = gql`
       isPublic
       createdAt
       updatedAt
-      # TODO: Add blocks and connections here later
+      blocks {
+          id
+          canvasId
+          type
+          content
+          position
+          size
+          createdAt
+          updatedAt
+      }
     }
   }
 `;
@@ -62,10 +86,32 @@ const CREATE_CANVAS_MUTATION = gql`
 const UPDATE_CANVAS_TITLE_MUTATION = gql`
     mutation UpdateCanvasTitle($id: ID!, $title: String!) {
         updateCanvasTitle(id: $id, title: $title) {
-            id # Return minimal fields needed for cache update
+            id
             title
             updatedAt
         }
+    }
+`;
+
+// Add block mutations
+const CREATE_BLOCK_MUTATION = gql`
+    mutation CreateBlock($canvasId: ID!, $type: String!, $position: Json!, $content: Json) {
+        createBlock(canvasId: $canvasId, type: $type, position: $position, content: $content) {
+            id
+            canvasId
+            type
+            content
+            position
+            size
+            createdAt
+            updatedAt
+        }
+    }
+`;
+
+const UNDO_BLOCK_CREATION_MUTATION = gql`
+    mutation UndoBlockCreation($blockId: ID!) {
+        undoBlockCreation(blockId: $blockId)
     }
 `;
 
@@ -82,14 +128,13 @@ export const fetchMyCanvases = async (): Promise<Canvas[]> => {
 export const fetchCanvasById = async (id: string): Promise<Canvas | null> => {
     // TODO: Add authentication headers when implemented
     try {
+        // Query now returns blocks as well
         const data = await gqlClient.request<{ canvas: Canvas | null }>(
             GET_CANVAS_BY_ID_QUERY,
             { id }
         );
         return data.canvas;
     } catch (error) {
-        // Handle cases where the backend throws an error (e.g., not found, unauthorized)
-        // For now, return null, but could be more specific based on error type
         console.error(`Error fetching canvas ${id}:`, error);
         return null;
     }
@@ -117,4 +162,28 @@ export const updateCanvasTitle = async (variables: { id: string; title: string }
     return data.updateCanvasTitle;
 };
 
-// Add other API functions here (e.g., fetchCanvasById, etc.) 
+// Add block API functions
+export const createBlock = async (variables: {
+    canvasId: string;
+    type: string;
+    position: { x: number; y: number };
+    content?: any;
+}): Promise<Block> => {
+    // TODO: Add authentication headers when implemented
+    const data = await gqlClient.request<{ createBlock: Block }>(
+        CREATE_BLOCK_MUTATION,
+        variables
+    );
+    return data.createBlock;
+};
+
+export const undoBlockCreation = async (blockId: string): Promise<boolean> => {
+    // TODO: Add authentication headers when implemented
+    const data = await gqlClient.request<{ undoBlockCreation: boolean }>(
+        UNDO_BLOCK_CREATION_MUTATION,
+        { blockId }
+    );
+    return data.undoBlockCreation;
+};
+
+// Add other API functions here (e.g., updateBlock...) 

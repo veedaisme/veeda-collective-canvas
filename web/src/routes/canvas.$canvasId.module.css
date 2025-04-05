@@ -1,48 +1,81 @@
 /* Styles for canvas.$canvasId.tsx */
 .container {
-    padding: 1.5rem;
+    padding: 0; /* Remove padding, manage layout via flex */
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 61px); /* Full viewport height minus header */
 }
 
-/* Add styles for the title editing container */
+.topBar {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1.5rem;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0; /* Prevent top bar from shrinking */
+    gap: 1rem;
+}
+
+.backLink {
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+/* Styles for the title editing container */
 .titleContainer {
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* Space between title/input and buttons */
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
+    gap: 0.75rem;
+    /* Remove border/padding as it's in topBar */
+    flex-grow: 1; /* Allow title container to take up space */
+    margin: 0; /* Reset margin */
 }
 
 .title {
     margin-top: 0;
     margin-bottom: 0;
-    cursor: pointer; /* Indicate it's clickable */
-    flex-grow: 1; /* Allow title to take up space */
+    cursor: pointer;
+    flex-grow: 1;
+    font-size: 1.2rem; /* Adjust size for top bar */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .titleInput {
     flex-grow: 1;
-    font-size: 1.5rem; /* Match h2 size */
+    font-size: 1.2rem; /* Match h2 size */
     padding: 0.25rem 0.5rem;
     border: 1px solid #ccc;
     border-radius: 4px;
+    min-width: 150px; /* Prevent shrinking too much */
 }
+
+/* Edit/Save/Cancel Button styling */
+/* ... (keep existing button styles: .editButton, .saveButton, .cancelButton) ... */
 
 /* Basic button styling */
 .editButton,
 .saveButton,
-.cancelButton {
+.cancelButton,
+.createButton {
     padding: 0.3rem 0.6rem;
     border: 1px solid #ccc;
     border-radius: 4px;
     cursor: pointer;
     background-color: #f0f0f0;
     font-size: 0.9em;
+    white-space: nowrap;
 }
 
 .editButton:hover,
 .saveButton:hover,
-.cancelButton:hover {
+.cancelButton:hover,
+.createButton:hover {
     background-color: #e0e0e0;
 }
 
@@ -80,18 +113,63 @@
     padding: 0 0.5rem;
 }
 
-.meta {
+.createButton {
+    /* Add specific styles if needed, inherits base */
+    margin-left: auto; /* Push to the right */
+}
+.createButton:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.undoNotification {
+    position: fixed; /* Or absolute relative to container */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1000;
+}
+
+.undoNotification button {
+    background: none;
+    border: none;
+    color: #6faaff; /* Light blue */
+    text-decoration: underline;
+    cursor: pointer;
     font-size: 0.9em;
-    color: #555;
-    margin-bottom: 0.25rem;
+    padding: 0;
 }
 
 .canvasArea {
-    margin-top: 2rem;
-    /* Styles for the react-flow container will go here later */
+    flex-grow: 1; /* Make canvas take remaining space */
+    position: relative; /* Needed if notification is absolute */
+    /* background-color: #f0f0f0; /* Optional background */
+}
+
+.reactFlowInstance {
+    height: 100%;
+    width: 100%;
 }
 
 .errorText {
     color: #d9534f;
     font-size: 0.9em;
-} 
+    margin-left: 0.5rem; /* Align with buttons */
+}
+
+/* Remove unused meta styles */
+/*
+.meta {
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 0.25rem;
+}
+*/ 

@@ -2,6 +2,15 @@
 
 ## April 5, 2025
 
+*   **Milestone:** Initial Block Management Features Implemented.
+    *   Added `Block` type and relations to backend GraphQL schema.
+    *   Implemented backend mutations for `createBlock` and `undoBlockCreation` (30s grace period) with in-memory store.
+    *   Updated backend canvas query to fetch associated blocks.
+    *   Integrated `reactflow` library into the frontend canvas view.
+    *   Mapped fetched blocks to `reactflow` nodes for display.
+    *   Implemented frontend mutation handling for creating blocks via a button.
+    *   Added frontend undo notification mechanism linked to the `undoBlockCreation` mutation.
+
 *   **Milestone:** Initial Canvas Management MVP Features Implemented.
     *   Setup basic Frontend (React/Vite/TS + TanStack Router/Query) and Backend (Deno/TS + Hono + GraphQL Yoga) projects.
     *   Implemented GraphQL API (in-memory) and corresponding frontend logic for:
@@ -13,6 +22,7 @@
     *   Ensured frontend linting and build pass.
 
 *   **Next Steps:**
-    *   Implement Block Management (Create, Edit, Arrange).
+    *   Implement Block positioning updates (drag and drop).
+    *   Implement Block content editing.
     *   Connect backend to PostgreSQL database.
     *   Implement User Authentication.
