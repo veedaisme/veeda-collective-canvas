@@ -1,5 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools' // Optional Devtools
+import styles from './__root.module.css'; // Import CSS Module
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -7,16 +8,19 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <>
-      {/* Basic Layout Placeholder */}
-      <div style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
+    <div className={styles.appContainer}>
+      <header className={styles.header}>
         <h1>Veeda MVP</h1>
-        {/* Add navigation links here later */}
-      </div>
-      <hr />
-      <Outlet />
-      {/* Optional Router Devtools */}
-      <TanStackRouterDevtools />
-    </>
+        {/* TODO: Add navigation links here later (e.g., using <Link> from TanStack Router) */}
+        {/* <nav>
+          <Link to="/">Home</Link> <Link to="/about">About</Link>
+        </nav> */}
+      </header>
+      <main className={styles.mainContent}>
+        <Outlet />
+      </main>
+      {/* Optional Router Devtools - only rendered in development */}
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
+    </div>
   )
 } 

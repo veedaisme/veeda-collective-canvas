@@ -1,0 +1,22 @@
+/* Styles for __root.tsx */
+.appContainer {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa; /* Light background */
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.mainContent {
+    flex-grow: 1; /* Takes up remaining vertical space */
+    /* padding: 1.5rem; No padding here, let child routes handle */
+} 
