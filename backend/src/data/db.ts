@@ -24,12 +24,23 @@ export interface BlockRecord {
     updatedAt: Date;
 }
 
+export interface ConnectionRecord {
+    id: string;
+    canvasId: string;
+    sourceBlockId: string;
+    targetBlockId: string;
+    sourceHandle?: string | null; // Optional handles
+    targetHandle?: string | null; // Optional handles
+    createdAt: Date;
+}
+
 // --- In-Memory Store --- 
 
 const MOCK_USER_ID = "user-123"; // Placeholder - Should come from context
 
 const canvasesStore: Map<string, CanvasRecord> = new Map();
 const blocksStore: Map<string, BlockRecord> = new Map();
+const connectionsStore = new Map<string, ConnectionRecord>();
 let nextCanvasId = 1;
 let nextBlockId = 1;
 const UNDO_GRACE_PERIOD_MS = 30 * 1000; // 30 seconds
@@ -147,4 +158,47 @@ export const deleteBlockRecord = async (id: string): Promise<boolean> => {
 // Utility for Undo Grace Period Check (keeps time logic separate)
 export const isWithinUndoGracePeriod = (createdAt: Date): boolean => {
     return (Date.now() - createdAt.getTime()) <= UNDO_GRACE_PERIOD_MS;
+};
+
+// --- Connection Data Access ---
+
+export const createConnectionRecord = async (
+    canvasId: string,
+    sourceBlockId: string,
+    targetBlockId: string,
+    sourceHandle?: string | null,
+    targetHandle?: string | null
+): Promise<ConnectionRecord> => {
+    console.log(`[DB] Creating connection between ${sourceBlockId} and ${targetBlockId} on canvas ${canvasId}`);
+    await new Promise(resolve => setTimeout(resolve, 10)); // Simulate db latency
+    const newConnection: ConnectionRecord = {
+        id: crypto.randomUUID(),
+        canvasId,
+        sourceBlockId,
+        targetBlockId,
+        sourceHandle,
+        targetHandle,
+        createdAt: new Date(),
+    };
+    // TODO: Validate block existence?
+    connectionsStore.set(newConnection.id, newConnection);
+    return newConnection;
+};
+
+export const deleteConnectionRecord = async (id: string): Promise<boolean> => {
+    console.log(`[DB] Deleting connection ${id}`);
+    await new Promise(resolve => setTimeout(resolve, 10)); // Simulate db latency
+    return connectionsStore.delete(id);
+};
+
+export const listConnectionsByCanvas = async (canvasId: string): Promise<ConnectionRecord[]> => {
+    console.log(`[DB] Listing connections for canvas ${canvasId}`);
+    await new Promise(resolve => setTimeout(resolve, 10)); // Simulate db latency
+    const connections: ConnectionRecord[] = [];
+    for (const connection of connectionsStore.values()) {
+        if (connection.canvasId === canvasId) {
+            connections.push(connection);
+        }
+    }
+    return connections;
 }; 

@@ -4,8 +4,12 @@ import {
     getBlocksByCanvasId, getBlockById, createBlockRecord, deleteBlockRecord,
     updateBlockRecordPosition, updateBlockRecordContent,
     isWithinUndoGracePeriod,
-    type CanvasRecord, type BlockRecord // Import types if needed
+    type CanvasRecord, type BlockRecord, type ConnectionRecord,
+    createConnectionRecord, deleteConnectionRecord,
+    listConnectionsByCanvas
 } from '../data/db.ts'; // Adjusted import path
+import { GraphQLError } from 'graphql';
+import { DateTimeResolver, JsonResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Import from CDN
 
 // Define Context type (placeholder, enhance with actual user type)
 interface ResolverContext {
@@ -247,6 +251,55 @@ export const resolvers = {
         }
         return updatedBlock;
     },
+
+    // --- Connection Mutations ---
+    createConnection: async (_: any, { canvasId, sourceBlockId, targetBlockId, sourceHandle, targetHandle }: { canvasId: string, sourceBlockId: string, targetBlockId: string, sourceHandle?: string | null, targetHandle?: string | null }): Promise<ConnectionRecord> => {
+        console.log(`[Resolver] Creating connection: ${sourceBlockId} -> ${targetBlockId}`);
+        // TODO: Add Auth checks (e.g., ensure user owns canvas and blocks)
+        const userId = "user-123"; // MOCK
+        const canvas = await getCanvasById(canvasId);
+        if (!canvas || canvas.userId !== userId) {
+            throw new GraphQLError(`Canvas not found or user does not have permission.`);
+        }
+        // Optional: Check if source/target blocks exist and belong to the canvas/user
+        // const sourceBlock = await getBlockById(sourceBlockId);
+        // const targetBlock = await getBlockById(targetBlockId);
+        // if (!sourceBlock || sourceBlock.canvasId !== canvasId || sourceBlock.userId !== userId) { ... }
+        // if (!targetBlock || targetBlock.canvasId !== canvasId || targetBlock.userId !== userId) { ... }
+
+        try {
+            const newConnection = await createConnectionRecord(canvasId, sourceBlockId, targetBlockId, sourceHandle, targetHandle);
+            return newConnection;
+        } catch (error: any) { // Type error as any
+            console.error("Error creating connection:", error);
+            throw new GraphQLError(`Failed to create connection: ${error.message}`);
+        }
+    },
+    deleteConnection: async (_: any, { connectionId }: { connectionId: string }): Promise<boolean> => {
+        console.log(`[Resolver] Deleting connection: ${connectionId}`);
+        // TODO: Add Auth checks (e.g., ensure user owns the connection via canvas/blocks)
+        // This might involve fetching the connection first to check its canvasId/blockIds
+        // const connection = await getConnectionById(connectionId) -> Need this function in db.ts
+        // if (!connection) { throw new GraphQLError("Connection not found.") }
+        // const canvas = await getCanvasById(connection.canvasId);
+        // if (!canvas || canvas.userId !== userId) { ... }
+
+        try {
+            const success = await deleteConnectionRecord(connectionId);
+            if (!success) {
+                // If delete failed, it might be because the connection didn't exist
+                throw new GraphQLError("Connection not found or could not be deleted.");
+            }
+            return true;
+        } catch (error: any) { // Type error as any
+            console.error("Error deleting connection:", error);
+            // Rethrow specific error or a generic one
+            if (error instanceof GraphQLError) {
+                throw error;
+            }
+            throw new GraphQLError(`Failed to delete connection: ${error.message}`);
+        }
+    },
   },
   // Note: deleteCanvas mutation is intentionally omitted based on requirements
   // NEW: Resolver for Canvas.blocks field
@@ -256,6 +309,12 @@ export const resolvers = {
           console.log(`Resolving: Canvas.blocks for canvas ID ${parent.id}`);
           // TODO: Add authorization check if needed (e.g., if blocks had separate permissions)
           return await getBlocksByCanvasId(parent.id);
+      },
+      connections: async (parent: CanvasRecord): Promise<ConnectionRecord[]> => {
+          console.log(`[Resolver] Fetching connections for canvas ${parent.id}`);
+          // TODO: Add Auth checks (already checked parent canvas access, is more needed?)
+          const connections = await listConnectionsByCanvas(parent.id);
+          return connections;
       }
   }
 }; 

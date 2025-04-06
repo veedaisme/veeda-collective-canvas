@@ -31,6 +31,22 @@ export interface Canvas {
   blocks?: Block[]; // Add blocks relation (optional as it might not always be fetched)
 }
 
+// Add Connection type
+export interface Connection {
+    id: string;
+    // canvasId: string; // Usually not needed directly on frontend edge
+    sourceBlockId: string;
+    targetBlockId: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
+    // Add other fields like label, style if defined in GraphQL
+}
+
+export interface CanvasData extends Canvas {
+    blocks: Block[];
+    connections: Connection[]; // Add connections
+}
+
 // --- GraphQL Operations ---
 
 // QUERIES
@@ -65,6 +81,13 @@ const GET_CANVAS_BY_ID_QUERY = gql`
           size
           createdAt
           updatedAt
+      }
+      connections {
+          id
+          sourceBlockId
+          targetBlockId
+          sourceHandle
+          targetHandle
       }
     }
   }
@@ -145,11 +168,11 @@ export const fetchMyCanvases = async (): Promise<Canvas[]> => {
   return data.myCanvases;
 };
 
-export const fetchCanvasById = async (id: string): Promise<Canvas | null> => {
+export const fetchCanvasById = async (id: string): Promise<CanvasData | null> => {
     // TODO: Add authentication headers when implemented
     try {
         // Query now returns blocks as well
-        const data = await gqlClient.request<{ canvas: Canvas | null }>(
+        const data = await gqlClient.request<{ canvas: CanvasData | null }>(
             GET_CANVAS_BY_ID_QUERY,
             { id }
         );
@@ -233,6 +256,80 @@ export const undoBlockCreation = async (blockId: string): Promise<boolean> => {
         { blockId }
     );
     return data.undoBlockCreation;
+};
+
+// --- Connection Mutations ---
+
+const CREATE_CONNECTION_MUTATION = `
+  mutation CreateConnection(
+    $canvasId: ID!, 
+    $sourceBlockId: ID!, 
+    $targetBlockId: ID!, 
+    $sourceHandle: String, 
+    $targetHandle: String
+  ) {
+    createConnection(
+      canvasId: $canvasId, 
+      sourceBlockId: $sourceBlockId, 
+      targetBlockId: $targetBlockId, 
+      sourceHandle: $sourceHandle, 
+      targetHandle: $targetHandle
+    ) {
+      id
+      sourceBlockId
+      targetBlockId
+      sourceHandle
+      targetHandle
+    }
+  }
+`;
+
+const DELETE_CONNECTION_MUTATION = `
+  mutation DeleteConnection($connectionId: ID!) {
+    deleteConnection(connectionId: $connectionId)
+  }
+`;
+
+export const createConnection = async (variables: {
+    canvasId: string;
+    sourceBlockId: string;
+    targetBlockId: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
+}): Promise<Connection | null> => {
+    console.log("[API] Creating connection:", variables);
+    // TODO: Add auth headers if needed
+    try {
+        const response = await gqlClient.request<{ createConnection: Connection }>(
+            CREATE_CONNECTION_MUTATION,
+            variables
+        );
+        console.log("[API] Connection created:", response.createConnection);
+        return response.createConnection;
+    } catch (error) {
+        console.error("[API] Error creating connection:", error);
+        // TODO: Add user-friendly error handling/notification
+        return null;
+    }
+};
+
+export const deleteConnection = async (variables: {
+    connectionId: string;
+}): Promise<boolean> => {
+    console.log("[API] Deleting connection:", variables.connectionId);
+    // TODO: Add auth headers if needed
+    try {
+        const response = await gqlClient.request<{ deleteConnection: boolean }>(
+            DELETE_CONNECTION_MUTATION,
+            variables
+        );
+        console.log("[API] Connection deleted result:", response.deleteConnection);
+        return response.deleteConnection ?? false;
+    } catch (error) {
+        console.error("[API] Error deleting connection:", error);
+        // TODO: Add user-friendly error handling/notification
+        return false;
+    }
 };
 
 // Add other API functions here (e.g., updateBlockSize...) 

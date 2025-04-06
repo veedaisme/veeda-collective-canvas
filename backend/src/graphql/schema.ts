@@ -1,3 +1,9 @@
+import { createYoga } from 'graphql-yoga';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import type { BlockRecord, CanvasRecord } from '../data/db.ts'; // Keep type import
+
+// In-memory data stores section (will be removed as imports are not needed here)
+
 // Remove gql import as makeExecutableSchema parses the raw string
 // import { gql } from "graphql-yoga";
 
@@ -13,6 +19,7 @@ export const typeDefs = `
     myCanvases: [Canvas!]
     """Fetches a specific canvas by its ID (auth placeholder)"""
     canvas(id: ID!): Canvas
+    canvases: [Canvas!]!
   }
 
   type Mutation {
@@ -34,6 +41,10 @@ export const typeDefs = `
     updateBlockContent(blockId: ID!, content: Json!): Block
 
     # TODO: Add mutations for updateBlockSize later
+    # TODO: Add mutation for updateBlockOrder later
+    # --- Connection Mutations ---
+    createConnection(canvasId: ID!, sourceBlockId: ID!, targetBlockId: ID!, sourceHandle: String, targetHandle: String): Connection!
+    deleteConnection(connectionId: ID!): Boolean!
   }
 
   type Canvas {
@@ -44,6 +55,8 @@ export const typeDefs = `
     updatedAt: DateTime!
     """Blocks associated with this canvas"""
     blocks: [Block!] # Add relation to blocks
+    """Connections associated with this canvas"""
+    connections: [Connection!] # Add relation to connections
   }
 
   """Represents a single content block on a canvas"""
@@ -58,5 +71,15 @@ export const typeDefs = `
       createdAt: DateTime!
       updatedAt: DateTime!
       # Add notes, connections relations later
+  }
+
+  type Connection {
+    id: ID!
+    canvasId: ID!
+    sourceBlockId: ID!
+    targetBlockId: ID!
+    sourceHandle: String
+    targetHandle: String
+    # Add other connection properties like label, style, etc. later if needed
   }
 `; 

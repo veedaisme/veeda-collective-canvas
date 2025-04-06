@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactFlow, {
     Controls, Background, MiniMap,
     useNodesState, useEdgesState, Node, Edge, BackgroundVariant,
     OnNodesChange, NodeChange,
-    NodeProps // Import NodeProps for custom nodes later
+    NodeProps,
+    addEdge,
+    type Connection,
+    type FitViewOptions,
+    type Viewport
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useMutation } from '@tanstack/react-query';
@@ -25,21 +29,29 @@ const mapBlockToNode = (block: Block): Node => ({
 
 interface CanvasWorkspaceProps {
     initialBlocks: Block[];
+    initialEdges: Edge[];
+    canvasTitle: string;
+    onSaveTitle: (newTitle: string) => void;
     onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
-    // Add callback for content edit request
     onNodeDoubleClick?: (event: React.MouseEvent, node: Node) => void;
-    // Callback to trigger undo notification from parent
-    showUndo?: (blockId: string) => void; // This is currently handled by parent
+    onConnect: (connection: Connection | Edge) => void;
+    onEdgesDelete: (deletedEdges: Edge[]) => void;
+    showUndo?: (blockId: string) => void;
 }
 
 export function CanvasWorkspace({
     initialBlocks,
+    initialEdges,
+    canvasTitle,
+    onSaveTitle,
     onNodeDragStop,
-    onNodeDoubleClick // Receive callback
+    onNodeDoubleClick,
+    onConnect,
+    onEdgesDelete
 }: CanvasWorkspaceProps) {
     const initialNodes = initialBlocks.map(mapBlockToNode);
     const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
     const [undoBlockId, setUndoBlockId] = useState<string | null>(null);
     const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
@@ -48,7 +60,8 @@ export function CanvasWorkspace({
     useEffect(() => {
         // Basic sync - assumes parent manages the canonical list
         setNodes(initialBlocks.map(mapBlockToNode));
-    }, [initialBlocks, setNodes]);
+        setEdges(initialEdges);
+    }, [initialBlocks, setNodes, initialEdges, setEdges]);
 
     // Wrap internal onNodesChange to potentially notify parent or add custom logic
     const handleNodesChange: OnNodesChange = useCallback(
@@ -110,19 +123,35 @@ export function CanvasWorkspace({
         }
     };
 
+    const handleConnect = useCallback(
+        (connection: Connection | Edge) => {
+            onConnect(connection);
+        },
+        [onConnect]
+    );
+
+    const fitViewOptions: FitViewOptions = {
+        onEdgesChange,
+        onNodeDragStop,
+        onNodeDoubleClick,
+        onConnect,
+        onEdgesDelete
+    };
+
     return (
         <div className={styles.canvasArea}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={handleNodesChange} // Use wrapped handler
+                onNodesChange={handleNodesChange}
                 onEdgesChange={onEdgesChange}
-                onNodeDragStop={onNodeDragStop} // Pass up drag events
-                onNodeDoubleClick={onNodeDoubleClick} // Pass callback to ReactFlow
+                onNodeDragStop={onNodeDragStop}
+                onNodeDoubleClick={onNodeDoubleClick}
+                onConnect={handleConnect}
+                onEdgesDelete={onEdgesDelete}
                 fitView
+                fitViewOptions={fitViewOptions}
                 className={styles.reactFlowInstance}
-                // TODO: Add onConnect handler for creating connections
-                // TODO: Add custom node types for inline editing
             >
                 <Controls />
                 <MiniMap nodeStrokeWidth={3} zoomable pannable />

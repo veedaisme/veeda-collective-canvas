@@ -42,6 +42,22 @@
         *   Added modal overlay with textarea and save/cancel buttons triggered by `editingBlockId`.
     *   Added CSS styles for the editing modal (`canvas.$canvasId.module.css`).
 
+*   **Block Connections (Edges):**
+    *   Added `Connection` type and `createConnection`/`deleteConnection` mutations to GraphQL schema (`schema.ts`).
+    *   Added `connections` field resolver to `Canvas` type in schema.
+    *   Added `ConnectionRecord` type, `connectionsStore`, and `create/delete/list` functions to `db.ts` (backend).
+    *   Added resolvers for `createConnection`, `deleteConnection`, and `Canvas.connections` (backend).
+    *   Updated `GET_CANVAS_QUERY` to fetch connections (frontend `api.ts`).
+    *   Added `CREATE/DELETE_CONNECTION_MUTATION` and `create/deleteConnection` API functions (frontend `api.ts`).
+    *   Updated `CanvasWorkspace` to handle `initialEdges`, `onConnect`, `onEdgesDelete` props.
+    *   In `CanvasViewPage` (`canvas.$canvasId.tsx`):
+        *   Fetched connections and mapped them to `Edge` objects.
+        *   Added `useMutation` hooks for `createConnection` and `deleteConnection` with cache updates.
+        *   Implemented `handleConnect` and `handleEdgesDelete` callbacks.
+    *   Fixed schema/resolver mismatch for `Canvas.connections`.
+    *   Fixed frontend `ReferenceError` for `handleTitleSave` and `updateCanvasTitleMutation`.
+    *   Corrected `graphql-scalars` import path in backend resolvers and cached dependency.
+
 *   **Next Steps:**
     *   Connect backend to PostgreSQL database.
     *   Implement User Authentication.

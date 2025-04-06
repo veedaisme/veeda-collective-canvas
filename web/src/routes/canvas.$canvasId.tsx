@@ -1,14 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createFileRoute, Link, useParams } from '@tanstack/react-router'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import ReactFlow, {
     Controls, Background, MiniMap, // Basic React Flow components
     useNodesState, useEdgesState, // Hooks to manage nodes/edges
-    Node, Edge, BackgroundVariant // Import BackgroundVariant
+    Node, Edge, BackgroundVariant, // Import BackgroundVariant
+    ReactFlowProvider, // Needed for useReactFlow hook if used lower down
+    addEdge,       // Add addEdge utility
+    type Connection, // Add Connection type
+    type OnNodesChange,
+    type OnEdgesChange,
+    type Viewport
 } from 'reactflow';
 import 'reactflow/dist/style.css'; // Default styles for react-flow
 
-import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, updateBlockPosition, updateBlockContent, Canvas, Block } from '../lib/api'
+import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, updateBlockPosition, updateBlockContent, Canvas, Block, CanvasData, Connection as ApiConnection, createConnection, deleteConnection } from '../lib/api'
 import styles from './canvas.$canvasId.module.css';
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
@@ -174,7 +180,40 @@ function CanvasViewPage() {
          if (undoTimeoutId) clearTimeout(undoTimeoutId);
     }
 
-  // Handler passed to CanvasHeader
+  // Mutation for updating the Canvas Title
+  const { mutate: performUpdateCanvasTitle, isPending: isUpdatingTitle } = useMutation({
+    mutationFn: updateCanvasTitle,
+    onSuccess: (updatedCanvasData, variables) => {
+        if (!updatedCanvasData) return;
+        console.log(`Canvas ${variables.id} title updated`);
+        // Update the canvas title in the query cache
+        queryClient.setQueryData<CanvasData>(['canvas', variables.id], (oldData) => {
+            if (!oldData) return oldData;
+            return { ...oldData, title: updatedCanvasData.title, updatedAt: updatedCanvasData.updatedAt };
+        });
+        // Potentially update other places if title is displayed elsewhere
+    },
+    onError: (err, variables) => {
+        console.error(`Error updating title for canvas ${variables.id}:`, err);
+        alert("Failed to save canvas title.");
+    },
+});
+
+  // Handler for saving the canvas title (passed to CanvasHeader -> CanvasWorkspace)
+  const handleTitleSave = useCallback((newTitle: string) => {
+      if (!canvasId) return; // Should always have canvasId here
+      const trimmedTitle = newTitle.trim();
+      if (trimmedTitle) {
+          // Use the correct mutation function name
+          performUpdateCanvasTitle({ id: canvasId, title: trimmedTitle }); 
+      } else {
+          // TODO: Show an error message - title cannot be empty
+          console.error("Canvas title cannot be empty.");
+      }
+      // Ensure dependency array uses the correct mutation function
+  }, [canvasId, performUpdateCanvasTitle]); 
+
+  // Handler for creating a new block (passed to CanvasHeader)
   const handleCreateNewBlock = () => {
     performCreateBlock({
       canvasId,
@@ -244,6 +283,115 @@ function CanvasViewPage() {
       setEditingContent("");
   };
 
+  // Map API Connections to ReactFlow Edges
+  const initialEdges = useMemo(() => {
+      if (!canvasData?.connections) return [];
+      return canvasData.connections.map((conn: ApiConnection): Edge => ({
+          id: conn.id,
+          source: conn.sourceBlockId,
+          target: conn.targetBlockId,
+          sourceHandle: conn.sourceHandle,
+          targetHandle: conn.targetHandle,
+          // Add other edge properties like type, label, style later
+      }));
+  }, [canvasData?.connections]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(canvasData?.blocks || []);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
+
+  // Update local nodes/edges if query data changes (e.g., after mutation cache update)
+  useEffect(() => {
+    if (canvasData?.blocks) {
+      setNodes(canvasData.blocks.map(mapBlockToNode));
+    }
+  }, [canvasData?.blocks, setNodes]);
+
+  useEffect(() => {
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges]);
+
+  // --- Mutations ---
+
+  // Mutation for Creating Connections
+  const createConnectionMutation = useMutation({
+    mutationFn: createConnection,
+    onSuccess: (newConnectionData) => {
+      if (!newConnectionData) return; // Handle creation failure
+      console.log('Connection created:', newConnectionData);
+      // Update cache - Add edge optimistically or refetch
+      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+        if (!oldData) return oldData;
+        const newEdge: Edge = {
+          id: newConnectionData.id,
+          source: newConnectionData.sourceBlockId,
+          target: newConnectionData.targetBlockId,
+          sourceHandle: newConnectionData.sourceHandle,
+          targetHandle: newConnectionData.targetHandle,
+        };
+        return {
+          ...oldData,
+          connections: [...(oldData.connections || []), newConnectionData], // Add to raw connection data
+          // Optionally update edges state directly here too, if not using useEffect
+          // edges: addEdge(newEdge, oldData.edges) // This might not work as expected if oldData.edges isn't there
+        };
+      });
+      // Or invalidate and refetch:
+      // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
+    },
+    onError: (error) => {
+      console.error("Failed to create connection:", error);
+      // TODO: Show user notification
+    },
+  });
+
+  // Mutation for Deleting Connections
+  const deleteConnectionMutation = useMutation({
+    mutationFn: deleteConnection,
+    // When deleting, we only get success boolean, need the ID passed in
+    onSuccess: (success, variables) => {
+      if (!success) return;
+      console.log('Connection deleted:', variables.connectionId);
+      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          connections: (oldData.connections || []).filter(conn => conn.id !== variables.connectionId),
+        };
+      });
+    },
+    onError: (error, variables) => {
+      console.error(`Failed to delete connection ${variables.connectionId}:`, error);
+      // TODO: Show user notification
+    },
+  });
+
+  // --- Handlers ---
+
+  // Handler for Creating Connections (from ReactFlow)
+  const handleConnect = useCallback((connection: Connection | Edge) => {
+    console.log('Attempting to connect:', connection);
+    // Check if essential fields are present (ReactFlow might provide partial data sometimes)
+    if (!connection.source || !connection.target || !canvasId) {
+      console.warn("Connection attempt missing required data", connection);
+      return;
+    }
+    createConnectionMutation.mutate({
+      canvasId: canvasId!,
+      sourceBlockId: connection.source,
+      targetBlockId: connection.target,
+      sourceHandle: connection.sourceHandle,
+      targetHandle: connection.targetHandle,
+    });
+  }, [canvasId, createConnectionMutation]); // Add dependencies
+
+  // Handler for Deleting Edges (from ReactFlow)
+  const handleEdgesDelete = useCallback((deletedEdges: Edge[]) => {
+    console.log('Attempting to delete edges:', deletedEdges);
+    deletedEdges.forEach(edge => {
+      deleteConnectionMutation.mutate({ connectionId: edge.id });
+    });
+  }, [deleteConnectionMutation]); // Add dependency
+
   // Handle loading and error states from useQuery
   if (isCanvasLoading && !canvasData) { // Check if loading initial data (canvasData is undefined)
       return <div>Loading Canvas...</div>; // Or a spinner component
@@ -265,12 +413,20 @@ function CanvasViewPage() {
         initialCanvas={canvasData} // Pass data from useQuery
         onCreateBlock={handleCreateNewBlock}
         isCreatingBlock={isCreatingBlock}
+        onTitleSave={handleTitleSave}
       />
       <CanvasWorkspace
         key={canvasId}
         initialBlocks={canvasData.blocks || []} // Pass blocks from useQuery data
+        initialEdges={edges}
+        canvasTitle={canvasData.title}
+        onSaveTitle={handleTitleSave}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         onNodeDragStop={handleNodeDragStop}
-        onNodeDoubleClick={handleNodeDoubleClick} // Pass down the double click handler
+        onNodeDoubleClick={handleNodeDoubleClick}
+        onConnect={handleConnect}
+        onEdgesDelete={handleEdgesDelete}
       />
        {/* Undo Notification */} 
        {undoBlockId && (

@@ -195,6 +195,9 @@
       "integrity": "sha512-H/A06tKD7sS1O1X2SshBVeA5FLycRpjqiBeqGKmBwBDBy28EnRjORxTNe269KSSr5un5qyWi1iL61wLxpd+ZOg=="
     }
   },
+  "redirects": {
+    "https://esm.sh/graphql@^16.10.0?target=denonext": "https://esm.sh/graphql@16.10.0?target=denonext"
+  },
   "remote": {
     "https://deno.land/x/hono@v4.2.9/compose.ts": "37d6e33b7db80e4c43a0629b12fd3a1e3406e7d9e62a4bfad4b30426ea7ae4f1",
     "https://deno.land/x/hono@v4.2.9/context.ts": "ceb7b1c68b9aade9e24a81d78d48c3f3aaefdb3d1190dd175e919d9e99b42b46",
@@ -217,7 +220,11 @@
     "https://deno.land/x/hono@v4.2.9/utils/html.ts": "6ea4f6bf41587a51607dff7a6d2865ef4d5001e4203b07e5c8a45b63a098e871",
     "https://deno.land/x/hono@v4.2.9/utils/http-status.ts": "f5b820f2793e45209f34deddf147b23e3133a89eb4c57dc643759a504706636b",
     "https://deno.land/x/hono@v4.2.9/utils/types.ts": "eed78020cecba38e7880a8b22532a8607a1be81fdd335d582fa78d17f59ecbb7",
-    "https://deno.land/x/hono@v4.2.9/utils/url.ts": "855169632c61d03703bd08cafb27664ba3fdb352892f01687d5cce8fd49e3cb1"
+    "https://deno.land/x/hono@v4.2.9/utils/url.ts": "855169632c61d03703bd08cafb27664ba3fdb352892f01687d5cce8fd49e3cb1",
+    "https://esm.sh/graphql-scalars@1.23.0": "c0d97c7e8338f07ed5bc28d5ec08c75c6676b8fffa3d8163eb3ecdddb32c508b",
+    "https://esm.sh/graphql-scalars@1.23.0/denonext/graphql-scalars.mjs": "7ec69b0c7b6769740cffb34d11cd3db8cb1b13a29b00edae5bd2b367cd7108da",
+    "https://esm.sh/graphql@16.10.0/denonext/graphql.mjs": "e225c9489f43278fb91f1e2a13da2160171c77e7a42a61dea905af789ae98acd",
+    "https://esm.sh/graphql@16.10.0?target=denonext": "ddcdb4fc58274fd45e4c4514f518457739d2831b5be14eea755d0efbbd1a83c0"
   },
   "workspace": {
     "dependencies": [
