@@ -2,6 +2,7 @@ import type { StringValueNode } from "graphql";
 import {
     getCanvasesByUserId, getCanvasById, createCanvasRecord, updateCanvasRecord,
     getBlocksByCanvasId, getBlockById, createBlockRecord, deleteBlockRecord,
+    updateBlockRecordPosition,
     isWithinUndoGracePeriod,
     type CanvasRecord, type BlockRecord // Import types if needed
 } from '../data/db.ts'; // Adjusted import path
@@ -188,6 +189,33 @@ export const resolvers = {
             console.log(`Resolved: undoBlockCreation - Block ${blockId} outside grace period.`);
             return false;
         }
+    },
+
+    // NEW: updateBlockPosition resolver
+    updateBlockPosition: async (_parent: unknown, { blockId, position }: { blockId: string; position: {x: number, y: number} }, context: ResolverContext) => {
+        // TODO: Get userId from actual context
+        const userId = "user-123"; // MOCK
+        // if (!userId) throw new Error("Unauthorized");
+
+        // Validate position structure (basic)
+        if (typeof position?.x !== 'number' || typeof position?.y !== 'number') {
+             throw new Error("Invalid position data."); // Consider GraphQLError
+        }
+
+        // Check block ownership
+        const block = await getBlockById(blockId);
+        if (!block || block.userId !== userId) {
+            console.log(`Update position failed: Block ${blockId} not found or not owned by user ${userId}`);
+            throw new Error(`Block not found.`); // Consider GraphQLError
+        }
+
+        console.log(`Resolving: updateBlockPosition for Block ID: ${blockId}`);
+        const updatedBlock = await updateBlockRecordPosition(blockId, position);
+        if (!updatedBlock) {
+             // Should not happen if existence check passed, but handle defensively
+             throw new Error("Failed to update block position.");
+        }
+        return updatedBlock;
     },
   },
   // Note: deleteCanvas mutation is intentionally omitted based on requirements

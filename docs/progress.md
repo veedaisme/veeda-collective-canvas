@@ -2,6 +2,13 @@
 
 ## April 5, 2025
 
+*   **Milestone:** Block Positioning Implemented.
+    *   Added `updateBlockPosition` mutation to backend schema and resolvers.
+    *   Implemented corresponding data access function (`updateBlockRecordPosition`).
+    *   Added frontend API function for updating position.
+    *   Implemented `onNodeDragStop` handler in `CanvasWorkspace` to trigger the mutation.
+    *   Updated React Query cache on successful position update.
+
 *   **Milestone:** Initial Block Management Features Implemented.
     *   Added `Block` type and relations to backend GraphQL schema.
     *   Implemented backend mutations for `createBlock` and `undoBlockCreation` (30s grace period) with in-memory store.
@@ -22,7 +29,6 @@
     *   Ensured frontend linting and build pass.
 
 *   **Next Steps:**
-    *   Implement Block positioning updates (drag and drop).
     *   Implement Block content editing.
     *   Connect backend to PostgreSQL database.
     *   Implement User Authentication.

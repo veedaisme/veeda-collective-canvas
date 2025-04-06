@@ -27,7 +27,10 @@ export const typeDefs = `
     """Removes a block only if created within the grace period (e.g., 30s)"""
     undoBlockCreation(blockId: ID!): Boolean
 
-    # TODO: Add mutations for updateBlockContent, updateBlockPosition, updateBlockSize later
+    """Updates the position of a block on the canvas"""
+    updateBlockPosition(blockId: ID!, position: Json!): Block
+
+    # TODO: Add mutations for updateBlockContent, updateBlockSize later
   }
 
   type Canvas {

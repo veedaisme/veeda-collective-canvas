@@ -112,6 +112,21 @@ export const createBlockRecord = async (data: {
     return newBlock;
 };
 
+export const updateBlockRecordPosition = async (id: string, position: { x: number; y: number }): Promise<BlockRecord | null> => {
+    console.log(`[DB] Updating block position ${id}`);
+    await new Promise(resolve => setTimeout(resolve, 10)); // Simulate db latency
+    const block = blocksStore.get(id);
+    if (!block) return null;
+    // Add basic validation for position structure
+    if (typeof position?.x !== 'number' || typeof position?.y !== 'number') {
+        console.error(`[DB] Invalid position data for block ${id}:`, position);
+        return null; // Or throw an error
+    }
+    block.position = position;
+    block.updatedAt = new Date();
+    return block;
+};
+
 export const deleteBlockRecord = async (id: string): Promise<boolean> => {
     console.log(`[DB] Deleting block ${id}`);
     await new Promise(resolve => setTimeout(resolve, 15));

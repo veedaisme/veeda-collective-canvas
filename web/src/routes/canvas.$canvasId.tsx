@@ -8,7 +8,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css'; // Default styles for react-flow
 
-import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, Canvas, Block } from '../lib/api'
+import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, updateBlockPosition, Canvas, Block } from '../lib/api'
 import styles from './canvas.$canvasId.module.css';
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
@@ -107,6 +107,33 @@ function CanvasViewPage() {
       }
   });
 
+  // NEW: Mutation for updating block position
+  const { mutate: performUpdateBlockPosition } = useMutation({
+      mutationFn: updateBlockPosition,
+      onSuccess: (updatedBlockData, variables) => {
+          if (!updatedBlockData) return; // Handle null case if API returns null on error
+          console.log(`Block ${variables.blockId} position updated`);
+          // Update the specific block within the canvas query cache
+          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+              if (!oldData || !oldData.blocks) return oldData;
+              return {
+                  ...oldData,
+                  blocks: oldData.blocks.map(block =>
+                      block.id === variables.blockId
+                          ? { ...block, position: updatedBlockData.position, updatedAt: updatedBlockData.updatedAt }
+                          : block
+                  ),
+              };
+          });
+      },
+      onError: (err, variables) => {
+          console.error(`Error updating position for block ${variables.blockId}:`, err);
+          alert(`Failed to save block position for ${variables.blockId}.`); // Simple feedback
+          // Consider reverting optimistic update if implemented
+          // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] }); // Refetch to revert
+      },
+  });
+
   // Handler for failed/expired undo
   const handleUndoFail = (blockId: string) => {
          console.warn(`[Page] Failed to undo block ${blockId} (likely expired)`);
@@ -139,8 +166,9 @@ function CanvasViewPage() {
   // Handler for node changes from CanvasWorkspace (e.g., drag stop)
   const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
     console.log('Node Drag Stop:', node.id, node.position);
-    // TODO: Implement updateBlockPosition mutation here
-  }, []);
+    // Call the mutation to save the new position
+    performUpdateBlockPosition({ blockId: node.id, position: node.position });
+  }, [performUpdateBlockPosition]);
 
   // Handler for the Undo button click
   const handleUndoClick = () => {
