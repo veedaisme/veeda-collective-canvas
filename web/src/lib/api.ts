@@ -125,6 +125,16 @@ const UPDATE_BLOCK_POSITION_MUTATION = gql`
     }
 `;
 
+const UPDATE_BLOCK_CONTENT_MUTATION = gql`
+    mutation UpdateBlockContent($blockId: ID!, $content: Json!) {
+        updateBlockContent(blockId: $blockId, content: $content) {
+            id # Return fields needed for cache update
+            content
+            updatedAt
+        }
+    }
+`;
+
 // --- API Functions ---
 
 export const fetchMyCanvases = async (): Promise<Canvas[]> => {
@@ -202,6 +212,20 @@ export const updateBlockPosition = async (variables: { blockId: string; position
     }
 };
 
+export const updateBlockContent = async (variables: { blockId: string; content: any }): Promise<Pick<Block, 'id' | 'content' | 'updatedAt'> | null> => {
+    // TODO: Add authentication headers when implemented
+    try {
+        const data = await gqlClient.request<{ updateBlockContent: Pick<Block, 'id' | 'content' | 'updatedAt'> }>(
+            UPDATE_BLOCK_CONTENT_MUTATION,
+            variables
+        );
+        return data.updateBlockContent;
+    } catch (error) {
+        console.error(`Error updating block content ${variables.blockId}:`, error);
+        return null;
+    }
+};
+
 export const undoBlockCreation = async (blockId: string): Promise<boolean> => {
     // TODO: Add authentication headers when implemented
     const data = await gqlClient.request<{ undoBlockCreation: boolean }>(
@@ -211,4 +235,4 @@ export const undoBlockCreation = async (blockId: string): Promise<boolean> => {
     return data.undoBlockCreation;
 };
 
-// Add other API functions here (e.g., updateBlockContent...) 
+// Add other API functions here (e.g., updateBlockSize...) 

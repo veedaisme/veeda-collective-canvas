@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ReactFlow, {
     Controls, Background, MiniMap,
     useNodesState, useEdgesState, Node, Edge, BackgroundVariant,
-    OnNodesChange, NodeChange // Import relevant types
+    OnNodesChange, NodeChange,
+    NodeProps // Import NodeProps for custom nodes later
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useMutation } from '@tanstack/react-query';
@@ -24,13 +25,18 @@ const mapBlockToNode = (block: Block): Node => ({
 
 interface CanvasWorkspaceProps {
     initialBlocks: Block[];
-    // Callback for parent to handle node position changes (for saving)
     onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
+    // Add callback for content edit request
+    onNodeDoubleClick?: (event: React.MouseEvent, node: Node) => void;
     // Callback to trigger undo notification from parent
-    showUndo?: (blockId: string) => void;
+    showUndo?: (blockId: string) => void; // This is currently handled by parent
 }
 
-export function CanvasWorkspace({ initialBlocks, onNodeDragStop }: CanvasWorkspaceProps) {
+export function CanvasWorkspace({
+    initialBlocks,
+    onNodeDragStop,
+    onNodeDoubleClick // Receive callback
+}: CanvasWorkspaceProps) {
     const initialNodes = initialBlocks.map(mapBlockToNode);
     const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -112,22 +118,24 @@ export function CanvasWorkspace({ initialBlocks, onNodeDragStop }: CanvasWorkspa
                 onNodesChange={handleNodesChange} // Use wrapped handler
                 onEdgesChange={onEdgesChange}
                 onNodeDragStop={onNodeDragStop} // Pass up drag events
+                onNodeDoubleClick={onNodeDoubleClick} // Pass callback to ReactFlow
                 fitView
                 className={styles.reactFlowInstance}
                 // TODO: Add onConnect handler for creating connections
+                // TODO: Add custom node types for inline editing
             >
                 <Controls />
                 <MiniMap nodeStrokeWidth={3} zoomable pannable />
                 <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
             </ReactFlow>
 
-            {/* Undo Notification */} 
-            {undoBlockId && (
+            {/* Undo Notification - Managed by parent for now */} 
+            {/* {undoBlockId && (
                 <div className={styles.undoNotification}>
                     <span>Block created.</span>
                     <button onClick={handleUndoClick}>Undo</button>
                 </div>
-            )}
+            )} */}
         </div>
     );
 } 

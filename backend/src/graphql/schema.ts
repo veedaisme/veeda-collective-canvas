@@ -30,7 +30,10 @@ export const typeDefs = `
     """Updates the position of a block on the canvas"""
     updateBlockPosition(blockId: ID!, position: Json!): Block
 
-    # TODO: Add mutations for updateBlockContent, updateBlockSize later
+    """Updates the content of a block"""
+    updateBlockContent(blockId: ID!, content: Json!): Block
+
+    # TODO: Add mutations for updateBlockSize later
   }
 
   type Canvas {

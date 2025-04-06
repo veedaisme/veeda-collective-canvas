@@ -2,7 +2,7 @@ import type { StringValueNode } from "graphql";
 import {
     getCanvasesByUserId, getCanvasById, createCanvasRecord, updateCanvasRecord,
     getBlocksByCanvasId, getBlockById, createBlockRecord, deleteBlockRecord,
-    updateBlockRecordPosition,
+    updateBlockRecordPosition, updateBlockRecordContent,
     isWithinUndoGracePeriod,
     type CanvasRecord, type BlockRecord // Import types if needed
 } from '../data/db.ts'; // Adjusted import path
@@ -214,6 +214,36 @@ export const resolvers = {
         if (!updatedBlock) {
              // Should not happen if existence check passed, but handle defensively
              throw new Error("Failed to update block position.");
+        }
+        return updatedBlock;
+    },
+
+    // NEW: updateBlockContent resolver
+    updateBlockContent: async (_parent: unknown, { blockId, content }: { blockId: string; content: any }, context: ResolverContext) => {
+        // TODO: Get userId from actual context
+        const userId = "user-123"; // MOCK
+        // if (!userId) throw new Error("Unauthorized");
+
+        // Validate content based on block type? (e.g., text block needs { text: string })
+        // For MVP, we might skip deep validation if content is just JSON
+        if (content === undefined || content === null) {
+            throw new Error("Content cannot be null or undefined."); // Consider GraphQLError
+        }
+
+        // Check block ownership
+        const block = await getBlockById(blockId);
+        if (!block || block.userId !== userId) {
+            console.log(`Update content failed: Block ${blockId} not found or not owned by user ${userId}`);
+            throw new Error(`Block not found.`); // Consider GraphQLError
+        }
+
+        // TODO: Add validation specific to block.type here if necessary
+        // Example: if (block.type === 'text' && typeof content.text !== 'string') throw new Error(...)
+
+        console.log(`Resolving: updateBlockContent for Block ID: ${blockId}`);
+        const updatedBlock = await updateBlockRecordContent(blockId, content);
+        if (!updatedBlock) {
+             throw new Error("Failed to update block content.");
         }
         return updatedBlock;
     },

@@ -8,7 +8,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css'; // Default styles for react-flow
 
-import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, updateBlockPosition, Canvas, Block } from '../lib/api'
+import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, updateBlockPosition, updateBlockContent, Canvas, Block } from '../lib/api'
 import styles from './canvas.$canvasId.module.css';
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
@@ -58,6 +58,10 @@ function CanvasViewPage() {
   // Undo state remains lifted
   const [undoBlockId, setUndoBlockId] = useState<string | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
+
+  // NEW: Block Content Editing State
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>("");
 
   // Create Block Mutation
   const { mutate: performCreateBlock, isPending: isCreatingBlock } = useMutation({
@@ -134,6 +138,34 @@ function CanvasViewPage() {
       },
   });
 
+  // NEW: Mutation for updating block content
+  const { mutate: performUpdateBlockContent, isPending: isUpdatingContent } = useMutation({
+      mutationFn: updateBlockContent,
+      onSuccess: (updatedBlockData, variables) => {
+          if (!updatedBlockData) return;
+          console.log(`Block ${variables.blockId} content updated`);
+          // Update cache
+          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+              if (!oldData || !oldData.blocks) return oldData;
+              return {
+                  ...oldData,
+                  blocks: oldData.blocks.map(block =>
+                      block.id === variables.blockId
+                          ? { ...block, content: updatedBlockData.content, updatedAt: updatedBlockData.updatedAt }
+                          : block
+                  ),
+              };
+          });
+          setEditingBlockId(null); // Exit editing mode
+      },
+      onError: (err, variables) => {
+          console.error(`Error updating content for block ${variables.blockId}:`, err);
+          alert(`Failed to save block content for ${variables.blockId}.`);
+          // Optionally reset editing state here or leave input open
+          // setEditingBlockId(null);
+      },
+  });
+
   // Handler for failed/expired undo
   const handleUndoFail = (blockId: string) => {
          console.warn(`[Page] Failed to undo block ${blockId} (likely expired)`);
@@ -177,6 +209,41 @@ function CanvasViewPage() {
       }
   };
 
+  // NEW: Handler for Node Double Click (passed to CanvasWorkspace)
+  const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+      console.log("Node Double Clicked:", node);
+      // Find the original block data (assuming it's needed or use node.data)
+      const blockData = canvasData?.blocks?.find(b => b.id === node.id);
+      if (blockData && blockData.type === 'text') { // Only allow editing text blocks for now
+        setEditingContent(blockData.content?.text || '');
+        setEditingBlockId(blockData.id);
+      } else {
+          console.log("Editing not supported for type:", blockData?.type);
+      }
+  }, [canvasData?.blocks]); // Dependency on blocks data
+
+  // NEW: Handler for saving edited content
+  const handleContentSave = () => {
+      if (editingBlockId) {
+          const originalBlock = canvasData?.blocks?.find(b => b.id === editingBlockId);
+          const newContent = { text: editingContent }; // Assuming text block structure
+
+          // Avoid saving if content hasn't changed (optional)
+          if (originalBlock && JSON.stringify(originalBlock.content) === JSON.stringify(newContent)) {
+              setEditingBlockId(null);
+              return;
+          }
+
+          performUpdateBlockContent({ blockId: editingBlockId, content: newContent });
+      }
+  };
+
+  // NEW: Handler to cancel editing content
+  const handleContentCancel = () => {
+      setEditingBlockId(null);
+      setEditingContent("");
+  };
+
   // Handle loading and error states from useQuery
   if (isCanvasLoading && !canvasData) { // Check if loading initial data (canvasData is undefined)
       return <div>Loading Canvas...</div>; // Or a spinner component
@@ -203,6 +270,7 @@ function CanvasViewPage() {
         key={canvasId}
         initialBlocks={canvasData.blocks || []} // Pass blocks from useQuery data
         onNodeDragStop={handleNodeDragStop}
+        onNodeDoubleClick={handleNodeDoubleClick} // Pass down the double click handler
       />
        {/* Undo Notification */} 
        {undoBlockId && (
@@ -211,6 +279,31 @@ function CanvasViewPage() {
               <button onClick={handleUndoClick}>Undo</button>
           </div>
        )}
+
+       {/* NEW: Modal or Overlay for Editing Block Content */} 
+       {editingBlockId && (
+          <div className={styles.editOverlay}>
+              <div className={styles.editModal}>
+                  <h3>Edit Block Content (ID: {editingBlockId})</h3>
+                  {/* Simple textarea for text blocks */} 
+                  <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      rows={5}
+                      className={styles.editTextarea}
+                      autoFocus
+                  />
+                  <div className={styles.editActions}>
+                      <button onClick={handleContentCancel} disabled={isUpdatingContent} className={styles.cancelButton}>
+                          Cancel
+                      </button>
+                      <button onClick={handleContentSave} disabled={isUpdatingContent} className={styles.saveButton}>
+                          {isUpdatingContent ? 'Saving...' : 'Save Content'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 }

@@ -127,6 +127,17 @@ export const updateBlockRecordPosition = async (id: string, position: { x: numbe
     return block;
 };
 
+export const updateBlockRecordContent = async (id: string, content: any): Promise<BlockRecord | null> => {
+    console.log(`[DB] Updating block content ${id}`);
+    await new Promise(resolve => setTimeout(resolve, 10)); // Simulate db latency
+    const block = blocksStore.get(id);
+    if (!block) return null;
+    // TODO: Add validation based on block.type if necessary
+    block.content = content;
+    block.updatedAt = new Date();
+    return block;
+};
+
 export const deleteBlockRecord = async (id: string): Promise<boolean> => {
     console.log(`[DB] Deleting block ${id}`);
     await new Promise(resolve => setTimeout(resolve, 15));

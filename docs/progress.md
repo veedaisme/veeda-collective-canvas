@@ -28,7 +28,20 @@
     *   Established project structure, ADRs for key tech choices, and initial styling.
     *   Ensured frontend linting and build pass.
 
+*   **Block Content Editing (Text Blocks - Modal):**
+    *   Added `updateBlockContent` mutation to GraphQL schema (`schema.ts`).
+    *   Added `updateBlockRecordContent` function to `db.ts` (backend).
+    *   Added `updateBlockContent` resolver (backend).
+    *   Added `UPDATE_BLOCK_CONTENT_MUTATION` and `updateBlockContent` API function (frontend).
+    *   Modified `CanvasWorkspace` to accept `onNodeDoubleClick` callback.
+    *   In `CanvasViewPage`:
+        *   Added state for `editingBlockId` and `editingContent`.
+        *   Added `useMutation` hook for `updateBlockContent`.
+        *   Implemented `handleNodeDoubleClick` to open editor (only for 'text' blocks).
+        *   Implemented `handleContentSave` and `handleContentCancel`.
+        *   Added modal overlay with textarea and save/cancel buttons triggered by `editingBlockId`.
+    *   Added CSS styles for the editing modal (`canvas.$canvasId.module.css`).
+
 *   **Next Steps:**
-    *   Implement Block content editing.
     *   Connect backend to PostgreSQL database.
     *   Implement User Authentication.
