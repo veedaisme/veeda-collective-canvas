@@ -201,4 +201,15 @@ export const listConnectionsByCanvas = async (canvasId: string): Promise<Connect
         }
     }
     return connections;
+};
+
+// --- Test Helpers (Export only for testing) ---
+
+export const _clearAllStores = () => {
+    console.warn("[TEST UTIL] Clearing all in-memory stores.");
+    canvasesStore.clear();
+    blocksStore.clear();
+    connectionsStore.clear();
+    nextCanvasId = 1; // Reset counters if needed
+    nextBlockId = 1;
 }; 

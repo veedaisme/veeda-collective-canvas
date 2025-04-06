@@ -1,4 +1,4 @@
-import type { StringValueNode } from "graphql";
+import type { StringValueNode } from "https://esm.sh/graphql@16.8.1";
 import {
     getCanvasesByUserId, getCanvasById, createCanvasRecord, updateCanvasRecord,
     getBlocksByCanvasId, getBlockById, createBlockRecord, deleteBlockRecord,
@@ -8,8 +8,8 @@ import {
     createConnectionRecord, deleteConnectionRecord,
     listConnectionsByCanvas
 } from '../data/db.ts'; // Adjusted import path
-import { GraphQLError } from 'graphql';
-import { DateTimeResolver, JsonResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Import from CDN
+import { GraphQLError } from 'https://esm.sh/graphql@16.8.1'; // Correct CDN import
+import { DateTimeResolver, JSONResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Use correct case: JSONResolver
 
 // Define Context type (placeholder, enhance with actual user type)
 interface ResolverContext {
@@ -21,67 +21,8 @@ interface ResolverContext {
 // --- Resolvers --- 
 
 export const resolvers = {
-  Json: {
-      // Basic JSON scalar - assumes data is already valid JSON
-      // For robust implementation, consider validation or a library like graphql-scalars
-      __serialize: (value: unknown) => value, // Pass through
-      __parseValue: (value: unknown) => value, // Pass through
-      __parseLiteral: (ast: any) => {
-            // This is a very basic parser for literals, might need improvement
-            function parseLiteralValue(literalAst: any): any {
-                switch (literalAst.kind) {
-                    case 'StringValue':
-                        return literalAst.value;
-                    case 'IntValue':
-                        return parseInt(literalAst.value, 10);
-                    case 'FloatValue':
-                        return parseFloat(literalAst.value);
-                    case 'BooleanValue':
-                        return literalAst.value;
-                    case 'ListValue':
-                        return literalAst.values.map(parseLiteralValue);
-                    case 'ObjectValue':
-                        return literalAst.fields.reduce((acc: any, field: any) => {
-                            acc[field.name.value] = parseLiteralValue(field.value);
-                            return acc;
-                        }, {});
-                    default:
-                        return null; // Or throw error for unsupported types
-                }
-            }
-            return parseLiteralValue(ast);
-        },
-  },
-  DateTime: {
-    // Basic scalar implementation for ISO string format
-    // Note: Consider using a library like graphql-scalars for more robust scalars
-    __serialize: (value: unknown): string => {
-      if (!(value instanceof Date)) {
-        throw new Error('Resolver Error: Expected a Date object');
-      }
-      return value.toISOString();
-    },
-    __parseValue: (value: unknown): Date => {
-      if (typeof value !== 'string') {
-        throw new Error('DateTime must be a string');
-      }
-      const date = new Date(value);
-      if (isNaN(date.getTime())) {
-          throw new Error('Invalid Date string');
-      }
-      return date;
-    },
-    __parseLiteral: (ast: { kind: string; value: any }): Date => {
-      if (ast.kind !== "StringValue") {
-        throw new Error('DateTime must be a string literal');
-      }
-      const date = new Date(ast.value);
-        if (isNaN(date.getTime())) {
-            throw new Error('Invalid Date string literal');
-        }
-      return date;
-    },
-  },
+  Json: JSONResolver,
+  DateTime: DateTimeResolver,
   Query: {
     hello: () => "Hello from Veeda Backend!",
 

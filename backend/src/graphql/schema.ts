@@ -1,5 +1,5 @@
-import { createYoga } from 'graphql-yoga';
-import { makeExecutableSchema } from '@graphql-tools/schema';
+import { createYoga } from "https://esm.sh/graphql-yoga@5.3.1"; // Use CDN
+import { makeExecutableSchema } from "https://esm.sh/@graphql-tools/schema@10.0.4"; // Use CDN
 import type { BlockRecord, CanvasRecord } from '../data/db.ts'; // Keep type import
 
 // In-memory data stores section (will be removed as imports are not needed here)

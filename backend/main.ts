@@ -1,6 +1,7 @@
-import { Hono } from "@hono/hono.ts";
-import { createYoga } from "graphql-yoga";
-import { makeExecutableSchema } from "@graphql-tools/schema";
+import { Hono } from "https://deno.land/x/hono@v4.4.13/mod.ts";
+import type { Context } from "https://deno.land/x/hono@v4.4.13/mod.ts";
+import { createYoga } from "https://esm.sh/graphql-yoga@5.3.1";
+import { makeExecutableSchema } from "https://esm.sh/@graphql-tools/schema@10.0.4";
 import { typeDefs } from "./src/graphql/schema.ts";
 import { resolvers } from "./src/graphql/resolvers.ts";
 
@@ -14,11 +15,11 @@ const schema = makeExecutableSchema({
 
 const yoga = createYoga({
   schema, // Pass the executable schema
-  context: async (ctx) => {
+  context: async (ctx: Context) => {
     // Placeholder for adding auth context later
     // Example: const user = await getUserFromAuthHeader(ctx.request.headers.get('Authorization'));
     // For now, just pass the raw request if needed by resolvers (though not currently used)
-    return { request: ctx.request /*, user */ };
+    return { request: ctx.req /*, user */ };
   },
   logging: true, // Enable logging for development
   graphiql: {
@@ -40,10 +41,10 @@ const app = new Hono();
 
 // Handle GraphQL requests using the Yoga handler - much simpler approach
 // This will handle all HTTP methods (GET, POST) for the /graphql endpoint
-app.all("/graphql", (c) => yoga(c.req.raw, {}));
+app.all("/graphql", (c: Context) => yoga(c.req.raw, {}));
 
 // Basic health check / root route
-app.get("/", (c) => c.text("Veeda Backend API Running"));
+app.get("/", (c: Context) => c.text("Veeda Backend API Running"));
 
 // --- Server Start ---
 

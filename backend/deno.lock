@@ -224,7 +224,9 @@
     "https://esm.sh/graphql-scalars@1.23.0": "c0d97c7e8338f07ed5bc28d5ec08c75c6676b8fffa3d8163eb3ecdddb32c508b",
     "https://esm.sh/graphql-scalars@1.23.0/denonext/graphql-scalars.mjs": "7ec69b0c7b6769740cffb34d11cd3db8cb1b13a29b00edae5bd2b367cd7108da",
     "https://esm.sh/graphql@16.10.0/denonext/graphql.mjs": "e225c9489f43278fb91f1e2a13da2160171c77e7a42a61dea905af789ae98acd",
-    "https://esm.sh/graphql@16.10.0?target=denonext": "ddcdb4fc58274fd45e4c4514f518457739d2831b5be14eea755d0efbbd1a83c0"
+    "https://esm.sh/graphql@16.10.0?target=denonext": "ddcdb4fc58274fd45e4c4514f518457739d2831b5be14eea755d0efbbd1a83c0",
+    "https://esm.sh/graphql@16.8.1": "0db91141da2b639b70f0cb83233ecd61f2fa41ceb76f9986ed9764ef3b18d784",
+    "https://esm.sh/graphql@16.8.1/denonext/graphql.mjs": "cb030940c21782c05d1ec9d944206d6c46fb3cd7f9e06e4d00bbac3d1a6b7bdf"
   },
   "workspace": {
     "dependencies": [
