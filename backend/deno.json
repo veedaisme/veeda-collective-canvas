@@ -1,11 +1,13 @@
 {
   "tasks": {
-    "dev": "deno run --config deno.json --allow-net --allow-env --allow-read --watch main.ts"
+    "dev": "deno run --config deno.json --allow-net --allow-env --allow-read --watch --env-file=.env main.ts"
   },
   "imports": {
     "@hono/": "https://deno.land/x/hono@v4.2.9/",
-    "graphql-yoga": "npm:graphql-yoga@^5",
+    "graphql-yoga": "npm:graphql-yoga@^5.4.0",
     "graphql": "npm:graphql@^16",
-    "@graphql-tools/schema": "npm:@graphql-tools/schema@^10"
+    "@graphql-tools/schema": "npm:@graphql-tools/schema@^10",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2",
+    "std/": "https://deno.land/std@0.224.0/"
   }
 } 

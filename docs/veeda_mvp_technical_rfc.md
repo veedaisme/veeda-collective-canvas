@@ -13,9 +13,9 @@ This RFC outlines the proposed technical architecture and key implementation det
 
 The primary motivation is to translate the functional requirements from the [Veeda MVP PRD](veeda_mvp_prd.md) into a concrete technical plan. This ensures alignment within the development team on the implementation approach before coding begins. The chosen technologies aim for a modern, efficient, and maintainable codebase:
 
-*   **Frontend:** React provides a robust component model. The TanStack ecosystem ([Router](https://tanstack.com/router/latest), [Query](https://tanstack.com/query/latest), [Form](https://tanstack.com/form/latest)) offers type-safe, performant solutions for routing, server state management, and form handling.
-*   **Backend:** **A custom backend built with Deno and TypeScript provides maximum flexibility and control. Utilizing GraphQL offers efficient data fetching, strong typing aligned with TypeScript, and better long-term API evolution compared to REST, especially given the interconnected data model and potential future features like real-time collaboration.**
-*   **Database:** PostgreSQL offers reliability, strong data integrity features, and excellent JSONB support suitable for flexible block structures.
+*   **Frontend:** React provides a robust component model. The TanStack ecosystem ([Router](https://tanstack.com/router/latest), [Query](https://tanstack.com/query/latest), [Form](https://tanstack.com/form/latest)) offers type-safe, performant solutions for routing, server state management, and form handling. **The frontend interacts solely with the backend GraphQL API for all data needs.**
+*   **Backend:** A custom backend built with Deno and TypeScript provides maximum flexibility and control. Utilizing GraphQL offers efficient data fetching, strong typing aligned with TypeScript, and better long-term API evolution compared to REST, especially given the interconnected data model and potential future features like real-time collaboration. **The backend handles all database interactions using the Supabase client.**
+*   **Database:** Supabase (managed PostgreSQL) offers reliability, strong data integrity features, excellent JSONB support, and built-in authentication and RLS capabilities.
 
 ## 3. Proposed Solution / Detailed Design
 
@@ -23,14 +23,14 @@ The primary motivation is to translate the functional requirements from the [Vee
 
 A standard client-server architecture will be employed:
 
-*   **Client:** A Single Page Application (SPA) built with React and TanStack.
-*   **Server:** **A GraphQL API server built with Deno/TypeScript.**
-*   **Database:** PostgreSQL instance storing all application data.
+*   **Client:** A Single Page Application (SPA) built with React and TanStack. This client **communicates exclusively** with the backend GraphQL API.
+*   **Server:** A GraphQL API server built with Deno/TypeScript. This server **is the sole interface** to the database (Supabase/PostgreSQL) and encapsulates all business logic and data access.
+*   **Database:** Supabase (managed PostgreSQL) instance storing all application data.
 
 ```mermaid
 graph LR
-    A[Client (React + TanStack)] <-- HTTP/WebSocket --> B(GraphQL API Server Deno + TS);
-    B <-- TCP --> C(PostgreSQL Database);
+    A[Client (React + TanStack)] <-- GraphQL (HTTP) --> B(Backend GraphQL API Server Deno + TS);
+    B <-- SQL/Supabase Client --> C(Database Supabase PostgreSQL);
 ```
 
 ### 3.2. Frontend (React + TanStack)
@@ -65,11 +65,11 @@ graph LR
     *   **GraphQL Server:** `graphql-yoga` or Apollo Server adapted for Deno/Oak.
     *   **Web Framework (for GraphQL endpoint):** Hono (ADR-005).
     *   **GraphQL Schema Definition:** SDL (Schema Definition Language) or code-first approach (e.g., using `TypeGraphQL` if adapted).
-*   **Database:** PostgreSQL (v14+ - could be self-hosted or managed).
-*   **Database Client:** `postgres` (Deno).
-*   **Authentication:** JWT (JSON Web Tokens) passed via HTTP headers. Middleware in the GraphQL server will handle token validation and populate context with user info.
+*   **Database:** Supabase (managed PostgreSQL) (v14+ - could be self-hosted or managed).
+*   **Database Client:** `@supabase/supabase-js` (for Deno backend).
+*   **Authentication:** Primarily handled by Supabase Auth on the backend, with JWTs potentially passed from frontend to backend GraphQL requests for authorization checks within resolvers against Supabase RLS or custom logic.
 *   **API Specification:** GraphQL API.
-    *   **Core Types (Conceptual):** `User`, `Canvas`, `Block`, `Note`, `Connection`.
+    *   **Core Types (Conceptual):** `User`, `Canvas`, `Block`, `Note`, `Connection`. **These types map closely to the Supabase database schema.**
     *   **Queries:** `myCanvases`, `canvas(id: ID!)`, `publicCanvas(shareId: String!)`, etc.
     *   **Mutations:** `signup`, `login`, `createCanvas`, `updateCanvasTitle`, `createBlock`, `updateBlockContent`, `updateBlockPosition`, `createNote`, `updateNote`, `createConnection`, `deleteConnection`, `updateCanvasSharing`, `undoBlockCreation(blockId: ID!)` (implements 5-min rule).
     *   **Subscriptions (Optional for MVP, Essential for Real-time):** `canvasUpdates(id: ID!)` - For future real-time collaboration.
@@ -86,61 +86,8 @@ graph LR
 
 ### 3.4. Database Schema (High-Level)
 
-```sql
--- Users Table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Canvases Table
-CREATE TABLE canvases (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL DEFAULT 'Untitled Canvas',
-    is_public BOOLEAN DEFAULT FALSE,
-    share_id VARCHAR(10) UNIQUE, -- Generated when made public
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Blocks Table
-CREATE TABLE blocks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    canvas_id UUID REFERENCES canvases(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id), -- Track creator
-    type VARCHAR(50) NOT NULL, -- 'text', 'image', 'link'
-    content JSONB NOT NULL, -- { text: '...' } or { url: '...', alt: '...' } or { url: '...' }
-    position JSONB NOT NULL, -- { x: number, y: number }
-    size JSONB NOT NULL, -- { width: number, height: number }
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Notes Table
-CREATE TABLE notes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id), -- Track creator/editor
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Connections Table
-CREATE TABLE connections (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    canvas_id UUID REFERENCES canvases(id) ON DELETE CASCADE,
-    source_block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
-    target_block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-    -- Add constraint to prevent self-referencing if needed
-);
-```
-*(Schema remains largely the same, potentially adjusted based on GraphQL resolver needs)*
+*(The specific SQL schema is now managed and reflected within the Supabase project dashboard and potentially via Supabase migrations. The TypeScript types generated by Supabase serve as the primary reference within the backend code.)*
+*(Schema definition removed as it's now managed by Supabase)*
 
 ## 4. Alternatives Considered
 
@@ -154,6 +101,7 @@ CREATE TABLE connections (
     *   Other state managers (Redux): TanStack Query handles server state well; simpler local state management is preferred.
 *   **Database:**
     *   MongoDB: Less structured, but PostgreSQL's JSONB offers similar flexibility with added relational benefits.
+*   **Database Client:** Deno `postgres` library (Supabase client provides higher-level abstractions and integration).
 
 ## 5. Open Questions
 

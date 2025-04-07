@@ -1,7 +1,7 @@
-import { Hono } from "https://deno.land/x/hono@v4.4.13/mod.ts";
-import type { Context } from "https://deno.land/x/hono@v4.4.13/mod.ts";
-import { createYoga } from "https://esm.sh/graphql-yoga@5.3.1";
-import { makeExecutableSchema } from "https://esm.sh/@graphql-tools/schema@10.0.4";
+import { Hono } from "@hono/mod.ts";
+import type { Context } from "@hono/mod.ts";
+import { createYoga } from "graphql-yoga";
+import { makeExecutableSchema } from "@graphql-tools/schema";
 import { typeDefs } from "./src/graphql/schema.ts";
 import { resolvers } from "./src/graphql/resolvers.ts";
 
