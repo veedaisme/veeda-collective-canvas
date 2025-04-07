@@ -251,18 +251,36 @@ function CanvasViewPage() {
   const { mutate: performUpdateCanvasTitle, isPending: isUpdatingTitle } = useMutation({
     mutationFn: updateCanvasTitle,
     onSuccess: (updatedCanvasData, variables) => {
-        if (!updatedCanvasData) return;
+        if (!updatedCanvasData) {
+            // API returned null but didn't throw an error
+            console.error("Canvas title update failed - no data returned");
+            alert("Failed to update canvas title. The canvas may not exist or you don't have permission.");
+            return;
+        }
         console.log(`Canvas ${variables.id} title updated`);
         // Update the canvas title in the query cache
         queryClient.setQueryData<CanvasData>(['canvas', variables.id], (oldData) => {
             if (!oldData) return oldData;
             return { ...oldData, title: updatedCanvasData.title, updatedAt: updatedCanvasData.updatedAt };
         });
-        // Potentially update other places if title is displayed elsewhere
     },
-    onError: (err, variables) => {
-        console.error(`Error updating title for canvas ${variables.id}:`, err);
-        alert("Failed to save canvas title.");
+    onError: (err) => {
+        console.error("Error updating canvas title:", err);
+        
+        // Handle GraphQL errors specifically
+        const errorObj = err as any;
+        if (errorObj?.response?.errors?.length > 0) {
+            const graphQLError = errorObj.response.errors[0];
+            if (graphQLError.extensions?.code === "NOT_FOUND_OR_FORBIDDEN") {
+                alert("Cannot update this canvas: either it doesn't exist or you don't have permission to edit it.");
+                // Invalidate query to refresh data
+                queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
+                return;
+            }
+        }
+        
+        // Generic error message
+        alert("Failed to save canvas title. Please try again or refresh the page.");
     },
 });
 

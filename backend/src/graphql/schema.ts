@@ -10,7 +10,13 @@ import type { BlockRecord, CanvasRecord } from '../data/db.ts'; // Keep type imp
 // GraphQL Schema Definition (Export raw string)
 export const typeDefs = `
   scalar DateTime
-  scalar Json # For flexible content, position, size
+  scalar JSON # Use standard uppercase JSON scalar
+
+  """Input type for coordinates"""
+  input PositionInput {
+    x: Float!
+    y: Float!
+  }
 
   type Query {
     """Placeholder query"""
@@ -29,16 +35,16 @@ export const typeDefs = `
     updateCanvasTitle(id: ID!, title: String!): Canvas
 
     """Creates a new block within a specific canvas"""
-    createBlock(canvasId: ID!, type: String!, position: Json!, content: Json): Block # content optional initially?
+    createBlock(canvasId: ID!, type: String!, position: PositionInput!, content: JSON): Block # Use JSON
 
     """Removes a block only if created within the grace period (e.g., 30s)"""
     undoBlockCreation(blockId: ID!): Boolean
 
     """Updates the position of a block on the canvas"""
-    updateBlockPosition(blockId: ID!, position: Json!): Block
+    updateBlockPosition(blockId: ID!, position: PositionInput!): Block # Use PositionInput!
 
     """Updates the content of a block"""
-    updateBlockContent(blockId: ID!, content: Json!): Block
+    updateBlockContent(blockId: ID!, content: JSON!): Block # Use JSON
 
     # TODO: Add mutations for updateBlockSize later
     # TODO: Add mutation for updateBlockOrder later
@@ -65,9 +71,9 @@ export const typeDefs = `
       canvasId: ID!
       # userId: ID! # Add user relation later if needed for ownership/permissions
       type: String! # e.g., 'text', 'image', 'link'
-      content: Json! # Flexible content based on type
-      position: Json! # { x: number, y: number }
-      size: Json! # { width: number, height: number } - Define later
+      content: JSON! # Use JSON
+      position: JSON! # Use JSON
+      size: JSON! # Use JSON
       createdAt: DateTime!
       updatedAt: DateTime!
       # Add notes, connections relations later

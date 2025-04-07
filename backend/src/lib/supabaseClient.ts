@@ -27,11 +27,6 @@ export const supabaseAdmin = createClient(
       persistSession: false,
       autoRefreshToken: false,
     },
-    global: {
-      headers: {
-        'x-supabase-role': 'service_role',
-      },
-    },
   }
 );
 

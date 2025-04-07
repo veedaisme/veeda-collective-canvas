@@ -41,10 +41,13 @@ const getUserIdFromContext = (context: ResolverContext): string => {
     return userId;
 };
 
+// Define the PositionInput type matching the schema
+interface PositionInput { x: number; y: number; }
+
 // --- Resolvers ---
 
 export const resolvers = {
-  Json: JSONResolver,
+  JSON: JSONResolver,
   DateTime: DateTimeResolver,
   Query: {
     hello: () => "Hello from Veeda Backend!",
@@ -97,7 +100,8 @@ export const resolvers = {
 
         console.log(`Resolving: updateCanvasTitle for ID: ${id} by user ${userId}`);
         // RLS handles authorization/existence check at DB level
-        const updatedCanvas = await updateCanvasRecord(id, { title: trimmedTitle });
+        // Pass the context to use the correct client for RLS
+        const updatedCanvas = await updateCanvasRecord(id, { title: trimmedTitle }, context);
 
         if (!updatedCanvas) {
             // This indicates either not found OR RLS blocked the update
@@ -111,20 +115,22 @@ export const resolvers = {
     },
 
     // createBlock resolver
-    createBlock: async (_parent: unknown, args: { canvasId: string; type: string; position: {x: number, y: number}; content?: any }, context: ResolverContext) => {
+    createBlock: async (_parent: unknown, args: { canvasId: string; type: string; position: PositionInput; content?: any }, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
 
-        // Basic validation
-        if (!args.type || !args.position || typeof args.position.x !== 'number' || typeof args.position.y !== 'number') {
-            throw new GraphQLError("Invalid input: type and position (with x, y) are required.", {
+        // Basic validation - position structure is now validated by GraphQL
+        if (!args.type) {
+            throw new GraphQLError("Invalid input: type is required.", {
                 extensions: { code: 'BAD_USER_INPUT' }
             });
         }
+        // Optional: Add further validation for position values if needed (e.g., non-negative)
 
-        console.log(`Resolving: createBlock for canvas ID: ${args.canvasId} by user ${userId}`);
+        console.log(`Resolving: createBlock for canvas ID: ${args.canvasId} by user ${userId} with position:`, args.position);
         // RLS handles canvas ownership check at DB level during insert
         try {
-            const newBlock = await createBlockRecord({ ...args, userId });
+            // Pass context
+            const newBlock = await createBlockRecord({ ...args, userId }, context);
             // Map internal record to GraphQL type if needed
             return newBlock;
         } catch (error: any) {
@@ -148,7 +154,8 @@ export const resolvers = {
         console.log(`Resolving: undoBlockCreation attempt for Block ID: ${blockId} by user ${userId} - Operation disallowed.`);
 
         // Fetch block to check ownership and potentially timestamp, though deletion is blocked
-        const block = await getBlockById(blockId);
+        // Pass context
+        const block = await getBlockById(blockId, context);
         if (!block || block.userId !== userId) {
             console.warn(`Undo attempt: Block ${blockId} not found or not owned by user ${userId}.`);
             // Still return false, as deletion wouldn't have been possible anyway.
@@ -163,19 +170,16 @@ export const resolvers = {
     },
 
     // updateBlockPosition resolver
-    updateBlockPosition: async (_parent: unknown, { blockId, position }: { blockId: string; position: {x: number, y: number} }, context: ResolverContext) => {
+    updateBlockPosition: async (_parent: unknown, { blockId, position }: { blockId: string; position: PositionInput }, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
 
-        // Validate position structure (basic)
-        if (typeof position?.x !== 'number' || typeof position?.y !== 'number') {
-             throw new GraphQLError("Invalid position data.", {
-                 extensions: { code: 'BAD_USER_INPUT', argumentName: 'position' }
-             });
-        }
+        // Position structure validated by GraphQL
+        // Optional: Add further validation for position values if needed
 
-        console.log(`Resolving: updateBlockPosition for Block ID: ${blockId} by user ${userId}`);
+        console.log(`Resolving: updateBlockPosition for Block ID: ${blockId} by user ${userId} with position:`, position);
         // RLS handles block ownership check at DB level during update
-        const updatedBlock = await updateBlockRecordPosition(blockId, position);
+        // Pass context
+        const updatedBlock = await updateBlockRecordPosition(blockId, position, context);
 
         if (!updatedBlock) {
             console.log(`Update position failed: Block ${blockId} not found or user ${userId} lacks permission.`);
@@ -205,7 +209,8 @@ export const resolvers = {
 
         console.log(`Resolving: updateBlockContent for Block ID: ${blockId} by user ${userId}`);
         // RLS handles block ownership check at DB level during update
-        const updatedBlock = await updateBlockRecordContent(blockId, content);
+        // Pass context
+        const updatedBlock = await updateBlockRecordContent(blockId, content, context);
 
         if (!updatedBlock) {
             console.log(`Update content failed: Block ${blockId} not found or user ${userId} lacks permission.`);
@@ -229,7 +234,8 @@ export const resolvers = {
         // if (!canvas || canvas.userId !== userId) { throw new GraphQLError(...); }
 
         try {
-            const newConnection = await createConnectionRecord(args.canvasId, args.sourceBlockId, args.targetBlockId, args.sourceHandle, args.targetHandle);
+            // Pass context
+            const newConnection = await createConnectionRecord(args.canvasId, args.sourceBlockId, args.targetBlockId, args.sourceHandle, args.targetHandle, context);
             // Map internal record to GraphQL type if needed
             return newConnection;
         } catch (error: any) { // Type error as any
@@ -254,7 +260,8 @@ export const resolvers = {
 
         try {
             // deleteConnectionRecord now checks RLS implicitly via the DELETE operation
-            const success = await deleteConnectionRecord(connectionId);
+            // Pass context
+            const success = await deleteConnectionRecord(connectionId, context);
             if (!success) {
                 // If delete failed, it might be because the connection didn't exist OR RLS prevented it
                 console.warn(`[Resolver] Delete connection ${connectionId} failed (not found or forbidden).`);
@@ -281,7 +288,8 @@ export const resolvers = {
           // Parent here is the resolved Canvas object
           console.log(`Resolving: Canvas.blocks for canvas ID ${parent.id}`);
           // RLS ensures we only get blocks for canvases the user can access
-          const blocks = await getBlocksByCanvasId(parent.id);
+          // Pass context
+          const blocks = await getBlocksByCanvasId(parent.id, context);
           // Map internal records to GraphQL type if needed
           return blocks;
       },
@@ -290,7 +298,8 @@ export const resolvers = {
             const userId = getUserIdFromContext(context); // Check auth
             console.log(`Resolving: Canvas.connections for canvas ID ${parent.id}`);
             // RLS ensures we only get connections for canvases the user can access
-            const connections = await listConnectionsByCanvas(parent.id);
+            // Pass context
+            const connections = await listConnectionsByCanvas(parent.id, context);
             // Map internal records to GraphQL type if needed
             return connections;
        }

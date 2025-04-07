@@ -139,7 +139,7 @@ const UPDATE_CANVAS_TITLE_MUTATION = gql`
 
 // Add block mutations
 const CREATE_BLOCK_MUTATION = gql`
-    mutation CreateBlock($canvasId: ID!, $type: String!, $position: Json!, $content: Json) {
+    mutation CreateBlock($canvasId: ID!, $type: String!, $position: PositionInput!, $content: JSON) {
         createBlock(canvasId: $canvasId, type: $type, position: $position, content: $content) {
             id
             canvasId
@@ -160,7 +160,7 @@ const UNDO_BLOCK_CREATION_MUTATION = gql`
 `;
 
 const UPDATE_BLOCK_POSITION_MUTATION = gql`
-    mutation UpdateBlockPosition($blockId: ID!, $position: Json!) {
+    mutation UpdateBlockPosition($blockId: ID!, $position: PositionInput!) {
         updateBlockPosition(blockId: $blockId, position: $position) {
             id # Return minimal data needed for potential cache update
             position
@@ -170,7 +170,7 @@ const UPDATE_BLOCK_POSITION_MUTATION = gql`
 `;
 
 const UPDATE_BLOCK_CONTENT_MUTATION = gql`
-    mutation UpdateBlockContent($blockId: ID!, $content: Json!) {
+    mutation UpdateBlockContent($blockId: ID!, $content: JSON!) {
         updateBlockContent(blockId: $blockId, content: $content) {
             id # Return fields needed for cache update
             content
