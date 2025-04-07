@@ -1,9 +1,43 @@
 import { Hono } from "@hono/mod.ts";
-import type { Context } from "@hono/mod.ts";
+import type { Context as HonoContext, Next } from "@hono/mod.ts";
 import { createYoga } from "graphql-yoga";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { typeDefs } from "./src/graphql/schema.ts";
 import { resolvers } from "./src/graphql/resolvers.ts";
+import { supabase } from './src/lib/supabaseClient.ts';
+import type { User } from '@supabase/supabase-js';
+
+// Define the shape of our GraphQL context
+interface GraphQLContext {
+    request: Request;
+    user: User | null;
+}
+
+// --- Hono Auth Middleware --- 
+const authMiddleware = async (c: HonoContext, next: Next) => {
+    let user: User | null = null;
+    const authHeader = c.req.header('Authorization');
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7); // Remove 'Bearer '
+        try {
+            // Verify token with Supabase
+            const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
+            if (error) {
+                console.warn('[Auth Middleware] Token validation error:', error.message);
+            } else {
+                user = supabaseUser; // Attach validated user
+                console.log(`[Auth Middleware] User ${user?.id} authenticated via token.`);
+            }
+        } catch (err: any) {
+            console.error('[Auth Middleware] Error during token validation:', err.message);
+        }
+    }
+
+    // Set user in context state for access in GraphQL context factory
+    c.set('user', user);
+    await next();
+};
 
 // --- GraphQL Yoga Setup ---
 
@@ -13,38 +47,46 @@ const schema = makeExecutableSchema({
   resolvers,
 });
 
-const yoga = createYoga({
-  schema, // Pass the executable schema
-  context: async (ctx: Context) => {
-    // Placeholder for adding auth context later
-    // Example: const user = await getUserFromAuthHeader(ctx.request.headers.get('Authorization'));
-    // For now, just pass the raw request if needed by resolvers (though not currently used)
-    return { request: ctx.req /*, user */ };
+// Yoga setup adjusted for Hono context
+const yoga = createYoga<{
+    honoContext: HonoContext<{ Variables: { user: User | null } }> 
+}, GraphQLContext>({ 
+  schema,
+  // The context factory receives the context object passed in the second arg of yoga()
+  context: ({ request, context }): GraphQLContext => { 
+      // Directly access the passed honoContext from the 'context' property
+      const honoContext = context?.honoContext;
+      const user = honoContext?.get('user') ?? null;
+      console.log(`[GraphQL Context] User from context: ${user?.id ?? 'None'}`);
+      return {
+          request: request,
+          user: user
+      };
   },
-  logging: true, // Enable logging for development
+  logging: true,
   graphiql: {
     title: "Veeda GraphQL API",
-    // Optionally add default queries/mutations here for the GraphiQL interface
-    // defaultQuery: "..."
   },
-  maskedErrors: false, // Show full errors during development for easier debugging
+  maskedErrors: false,
 });
 
 // --- Hono Setup ---
 
 const app = new Hono();
 
-// TODO: Add CORS middleware if needed for frontend interaction
-// Example using Hono's built-in CORS middleware:
-// import { cors } from "@hono/cors.ts";
-// app.use('/graphql', cors({ origin: 'http://localhost:5173' })); // Allow frontend origin
+// Apply Auth Middleware *only* to the /graphql route
+app.use('/graphql', authMiddleware);
 
-// Handle GraphQL requests using the Yoga handler - much simpler approach
-// This will handle all HTTP methods (GET, POST) for the /graphql endpoint
-app.all("/graphql", (c: Context) => yoga(c.req.raw, {}));
+// Handle GraphQL requests - pass Hono context to Yoga context factory
+app.all("/graphql", (c: HonoContext<{ Variables: { user: User | null } }>) => {
+    // Pass the context object shape expected by the factory
+    return yoga(c.req.raw, { 
+        honoContext: c
+    }); 
+});
 
 // Basic health check / root route
-app.get("/", (c: Context) => c.text("Veeda Backend API Running"));
+app.get("/", (c: HonoContext) => c.text("Veeda Backend API Running"));
 
 // --- Server Start ---
 

@@ -1,0 +1,75 @@
+.authContainer {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.authForm div {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.authForm label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.authForm input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.authForm button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.authForm button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.authForm button:not(:disabled):hover {
+    background-color: #0056b3;
+}
+
+.errorMessage {
+    color: #dc3545; /* Red */
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.successMessage {
+    color: #28a745; /* Green */
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.authContainer p {
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+.authContainer a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.authContainer a:hover {
+    text-decoration: underline;
+} 

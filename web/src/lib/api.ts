@@ -1,4 +1,5 @@
 import { GraphQLClient, gql } from 'graphql-request'
+import { supabase } from './supabaseClient'; // Import the frontend supabase client
 
 // --- GraphQL Client Setup ---
 const endpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT;
@@ -7,7 +8,27 @@ if (!endpoint) {
     throw new Error("VITE_GRAPHQL_ENDPOINT environment variable not set.");
 }
 
+// Initialize GraphQLClient without default headers
 const gqlClient = new GraphQLClient(endpoint);
+
+// Function to make authenticated requests
+const makeAuthenticatedRequest = async <T, V = Record<string, any>>(
+    query: string,
+    variables?: V
+): Promise<T> => {
+    let token: string | null = null;
+    // Get the current session/token from Supabase auth
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token || null;
+
+    const headers: Record<string, string> = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Make the request with dynamic headers
+    return gqlClient.request<T, V>(query, variables, headers);
+};
 
 // --- Types (Manual for now, consider codegen later) ---
 // Add Block Type
@@ -161,32 +182,30 @@ const UPDATE_BLOCK_CONTENT_MUTATION = gql`
 // --- API Functions ---
 
 export const fetchMyCanvases = async (): Promise<Canvas[]> => {
-  // TODO: Add authentication headers when implemented
-  const data = await gqlClient.request<{ myCanvases: Canvas[] }>(
-    GET_MY_CANVASES_QUERY
-  );
-  return data.myCanvases;
+    // Use the authenticated request function
+    const data = await makeAuthenticatedRequest<{ myCanvases: Canvas[] }>(GET_MY_CANVASES_QUERY);
+    return data.myCanvases;
 };
 
 export const fetchCanvasById = async (id: string): Promise<CanvasData | null> => {
-    // TODO: Add authentication headers when implemented
     try {
-        // Query now returns blocks as well
-        const data = await gqlClient.request<{ canvas: CanvasData | null }>(
+        // Use the authenticated request function
+        const data = await makeAuthenticatedRequest<{ canvas: CanvasData | null }>(
             GET_CANVAS_BY_ID_QUERY,
             { id }
         );
         return data.canvas;
     } catch (error) {
         console.error(`Error fetching canvas ${id}:`, error);
+        // Consider checking error type for auth errors vs not found
         return null;
     }
 };
 
 export const createCanvas = async (title?: string): Promise<Canvas> => {
-    // TODO: Add authentication headers when implemented
     const variables = title ? { title } : {};
-    const data = await gqlClient.request<{ createCanvas: Canvas }>(
+    // Use the authenticated request function
+    const data = await makeAuthenticatedRequest<{ createCanvas: Canvas }>(
         CREATE_CANVAS_MUTATION,
         variables
     );
@@ -194,11 +213,11 @@ export const createCanvas = async (title?: string): Promise<Canvas> => {
 };
 
 export const updateCanvasTitle = async (variables: { id: string; title: string }): Promise<Pick<Canvas, 'id' | 'title' | 'updatedAt'>> => {
-    // TODO: Add authentication headers when implemented
     if (!variables.title?.trim()) {
         throw new Error("Title cannot be empty"); // Basic client-side validation
     }
-    const data = await gqlClient.request<{ updateCanvasTitle: Pick<Canvas, 'id' | 'title' | 'updatedAt'> }>(
+    // Use the authenticated request function
+    const data = await makeAuthenticatedRequest<{ updateCanvasTitle: Pick<Canvas, 'id' | 'title' | 'updatedAt'> }>(
         UPDATE_CANVAS_TITLE_MUTATION,
         variables
     );
@@ -212,33 +231,38 @@ export const createBlock = async (variables: {
     position: { x: number; y: number };
     content?: any;
 }): Promise<Block> => {
-    // TODO: Add authentication headers when implemented
-    const data = await gqlClient.request<{ createBlock: Block }>(
-        CREATE_BLOCK_MUTATION,
-        variables
-    );
-    return data.createBlock;
+    // Use the authenticated request function
+     try {
+         const data = await makeAuthenticatedRequest<{ createBlock: Block }>(
+            CREATE_BLOCK_MUTATION,
+            variables
+        );
+        return data.createBlock;
+    } catch (error) {
+        console.error(`Error creating block:`, error);
+        // Re-throw or handle specific GraphQL errors
+        throw error;
+    }
 };
 
 export const updateBlockPosition = async (variables: { blockId: string; position: { x: number; y: number } }): Promise<Pick<Block, 'id' | 'position' | 'updatedAt'> | null> => {
-    // TODO: Add authentication headers when implemented
     try {
-        const data = await gqlClient.request<{ updateBlockPosition: Pick<Block, 'id' | 'position' | 'updatedAt'> }>(
+        // Use the authenticated request function
+        const data = await makeAuthenticatedRequest<{ updateBlockPosition: Pick<Block, 'id' | 'position' | 'updatedAt'> }>(
             UPDATE_BLOCK_POSITION_MUTATION,
             variables
         );
         return data.updateBlockPosition;
     } catch (error) {
         console.error(`Error updating block position ${variables.blockId}:`, error);
-        // Handle errors appropriately, e.g., return null or re-throw specific error types
         return null;
     }
 };
 
 export const updateBlockContent = async (variables: { blockId: string; content: any }): Promise<Pick<Block, 'id' | 'content' | 'updatedAt'> | null> => {
-    // TODO: Add authentication headers when implemented
     try {
-        const data = await gqlClient.request<{ updateBlockContent: Pick<Block, 'id' | 'content' | 'updatedAt'> }>(
+        // Use the authenticated request function
+        const data = await makeAuthenticatedRequest<{ updateBlockContent: Pick<Block, 'id' | 'content' | 'updatedAt'> }>(
             UPDATE_BLOCK_CONTENT_MUTATION,
             variables
         );
@@ -250,12 +274,17 @@ export const updateBlockContent = async (variables: { blockId: string; content: 
 };
 
 export const undoBlockCreation = async (blockId: string): Promise<boolean> => {
-    // TODO: Add authentication headers when implemented
-    const data = await gqlClient.request<{ undoBlockCreation: boolean }>(
-        UNDO_BLOCK_CREATION_MUTATION,
-        { blockId }
-    );
-    return data.undoBlockCreation;
+    // Use the authenticated request function
+    try {
+        const data = await makeAuthenticatedRequest<{ undoBlockCreation: boolean }>(
+            UNDO_BLOCK_CREATION_MUTATION,
+            { blockId }
+        );
+        return data.undoBlockCreation;
+    } catch (error) {
+        console.error(`Error undoing block creation ${blockId}:`, error);
+        return false;
+    }
 };
 
 // --- Connection Mutations ---
@@ -298,9 +327,9 @@ export const createConnection = async (variables: {
     targetHandle?: string | null;
 }): Promise<Connection | null> => {
     console.log("[API] Creating connection:", variables);
-    // TODO: Add auth headers if needed
     try {
-        const response = await gqlClient.request<{ createConnection: Connection }>(
+        // Use the authenticated request function
+        const response = await makeAuthenticatedRequest<{ createConnection: Connection }>(
             CREATE_CONNECTION_MUTATION,
             variables
         );
@@ -308,7 +337,6 @@ export const createConnection = async (variables: {
         return response.createConnection;
     } catch (error) {
         console.error("[API] Error creating connection:", error);
-        // TODO: Add user-friendly error handling/notification
         return null;
     }
 };
@@ -317,9 +345,9 @@ export const deleteConnection = async (variables: {
     connectionId: string;
 }): Promise<boolean> => {
     console.log("[API] Deleting connection:", variables.connectionId);
-    // TODO: Add auth headers if needed
     try {
-        const response = await gqlClient.request<{ deleteConnection: boolean }>(
+         // Use the authenticated request function
+        const response = await makeAuthenticatedRequest<{ deleteConnection: boolean }>(
             DELETE_CONNECTION_MUTATION,
             variables
         );
@@ -327,7 +355,6 @@ export const deleteConnection = async (variables: {
         return response.deleteConnection ?? false;
     } catch (error) {
         console.error("[API] Error deleting connection:", error);
-        // TODO: Add user-friendly error handling/notification
         return false;
     }
 };
