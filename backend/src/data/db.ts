@@ -1,5 +1,7 @@
 // src/data/db.ts - Supabase data access functions
-import { supabase } from '../lib/supabaseClient.ts';
+import { supabase, supabaseAdmin } from '../lib/supabaseClient.ts';
+import { supabase as defaultSupabaseClient } from '../lib/supabaseClient.ts'; // Rename global client
+import type { ResolverContext } from '../graphql/resolvers.ts';
 // TODO: Ideally, import the generated Database type directly if possible
 // For now, define specific table types based on generated output
 type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -96,12 +98,19 @@ function mapCanvasRowToRecord(row: CanvasRow): CanvasRecord {
 }
 
 // Canvases
-export const getCanvasesByUserId = async (userId: string): Promise<CanvasRecord[]> => {
+export const getCanvasesByUserId = async (userId: string, context?: ResolverContext): Promise<CanvasRecord[]> => {
     console.log(`[DB] Getting canvases for user ${userId}`);
-    const { data, error } = await supabase
+    
+    // Use the request-specific client from context if available, otherwise default
+    const db = context?.supabase || defaultSupabaseClient;
+    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for getCanvasesByUserId`);
+
+    const { data, error } = await db
         .from('canvases')
         .select('*')
-        .eq('user_id', userId); // RLS should handle authorization
+        // No longer need .eq('user_id', userId) because RLS policy will handle it
+        // based on the authenticated user in the request-specific client.
+        // .eq('user_id', userId); 
 
     if (error) {
         console.error(`[DB] Error fetching canvases for user ${userId}:`, error);
@@ -111,14 +120,17 @@ export const getCanvasesByUserId = async (userId: string): Promise<CanvasRecord[
     return (data || []).map(mapCanvasRowToRecord);
 };
 
-export const getCanvasById = async (id: string): Promise<CanvasRecord | undefined> => {
+export const getCanvasById = async (id: string, context?: ResolverContext): Promise<CanvasRecord | undefined> => {
     console.log(`[DB] Getting canvas by id ${id}`);
-    // Note: RLS policy should ensure user can only fetch their own or public canvases
-    const { data, error } = await supabase
+    const db = context?.supabase || defaultSupabaseClient;
+    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for getCanvasById`);
+
+    // RLS policy will handle authorization based on client's auth state
+    const { data, error } = await db
         .from('canvases')
         .select('*')
         .eq('id', id)
-        .maybeSingle(); // Returns null if not found, or a single object
+        .maybeSingle(); 
 
     if (error) {
         console.error(`[DB] Error fetching canvas ${id}:`, error);
@@ -128,7 +140,7 @@ export const getCanvasById = async (id: string): Promise<CanvasRecord | undefine
     return data ? mapCanvasRowToRecord(data) : undefined;
 };
 
-export const createCanvasRecord = async (data: { userId: string; title?: string }): Promise<CanvasRecord> => {
+export const createCanvasRecord = async (data: { userId: string; title?: string }, context?: ResolverContext): Promise<CanvasRecord> => {
     console.log(`[DB] Creating canvas for user ${data.userId}`);
     const canvasToInsert = {
         user_id: data.userId,
@@ -136,7 +148,13 @@ export const createCanvasRecord = async (data: { userId: string; title?: string 
         // is_public defaults to FALSE in DB
     };
 
-    const { data: insertedData, error } = await supabase
+    // Use supabaseAdmin if available in context, otherwise fall back to regular supabase client
+    const db = context?.supabaseAdmin || supabaseAdmin || supabase;
+    
+    // Always log which client we're using to help with debugging
+    console.log(`[DB] Using ${db === supabaseAdmin ? 'admin' : 'regular'} client for canvas creation`);
+
+    const { data: insertedData, error } = await db
         .from('canvases')
         .insert(canvasToInsert)
         .select() // Return the newly created row

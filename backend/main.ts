@@ -4,29 +4,32 @@ import { createYoga } from "graphql-yoga";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { typeDefs } from "./src/graphql/schema.ts";
 import { resolvers } from "./src/graphql/resolvers.ts";
-import { supabase } from './src/lib/supabaseClient.ts';
+import { supabase, supabaseAdmin } from './src/lib/supabaseClient.ts';
 import type { User } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Define the shape of our GraphQL context
 interface GraphQLContext {
     request: Request;
     user: User | null;
+    supabase: SupabaseClient;
+    supabaseAdmin: SupabaseClient;
 }
 
 // --- Hono Auth Middleware --- 
 const authMiddleware = async (c: HonoContext, next: Next) => {
     let user: User | null = null;
+    let token: string | null = null;
     const authHeader = c.req.header('Authorization');
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7); // Remove 'Bearer '
+        token = authHeader.substring(7);
         try {
-            // Verify token with Supabase
             const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
             if (error) {
                 console.warn('[Auth Middleware] Token validation error:', error.message);
             } else {
-                user = supabaseUser; // Attach validated user
+                user = supabaseUser;
                 console.log(`[Auth Middleware] User ${user?.id} authenticated via token.`);
             }
         } catch (err: any) {
@@ -34,8 +37,8 @@ const authMiddleware = async (c: HonoContext, next: Next) => {
         }
     }
 
-    // Set user in context state for access in GraphQL context factory
     c.set('user', user);
+    c.set('token', token);
     await next();
 };
 
@@ -49,17 +52,33 @@ const schema = makeExecutableSchema({
 
 // Yoga setup adjusted for Hono context
 const yoga = createYoga<
-    HonoContext<{ Variables: { user: User | null } }>, // Argument type is Hono context
-    GraphQLContext // Return type is our GraphQL context
+    HonoContext<{ Variables: { user: User | null, token: string | null } }>,
+    GraphQLContext
 >({ 
   schema,
-  // The context factory now receives the Hono context directly
-  context: (honoContext: HonoContext<{ Variables: { user: User | null } }>): GraphQLContext => { 
-      const user = honoContext.get('user') ?? null; // Get user directly from Hono context
+  context: (honoContext: HonoContext<{ Variables: { user: User | null, token: string | null } }>): GraphQLContext => { 
+      const user = honoContext.get('user') ?? null;
+      const token = honoContext.get('token') ?? null;
       console.log(`[GraphQL Context] User from context: ${user?.id ?? 'None'}`);
+      
+      const requestSupabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL')!, 
+          Deno.env.get('SUPABASE_ANON_KEY')!,
+          {
+              global: {
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+              },
+              auth: {
+                  persistSession: false,
+              }
+          }
+      );
+
       return {
-          request: honoContext.req.raw, // Get raw request from Hono context
-          user: user
+          request: honoContext.req.raw,
+          user: user,
+          supabase: requestSupabaseClient,
+          supabaseAdmin: supabaseAdmin
       };
   },
   logging: true,
@@ -77,7 +96,7 @@ const app = new Hono();
 app.use('/graphql', authMiddleware);
 
 // Handle GraphQL requests - pass Hono context directly to Yoga context factory
-app.all("/graphql", (c: HonoContext<{ Variables: { user: User | null } }>) => {
+app.all("/graphql", (c: HonoContext<{ Variables: { user: User | null, token: string | null } }>) => {
     // Pass Hono context 'c' directly as the second argument
     return yoga(c.req.raw, c); 
 });

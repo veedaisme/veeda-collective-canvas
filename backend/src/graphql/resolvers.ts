@@ -10,6 +10,9 @@ import {
 } from '../data/db.ts'; // Adjusted import path
 import { GraphQLError } from 'https://esm.sh/graphql@16.8.1'; // Correct CDN import
 import { DateTimeResolver, JSONResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Use correct case: JSONResolver
+import type { supabase, supabaseAdmin } from "../lib/supabaseClient.ts";
+import type { User as SupabaseUser } from '@supabase/supabase-js'; // Rename imported User
+import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 
 // --- Interfaces & Context (Assuming Supabase Auth integration later) ---
 interface User {
@@ -17,10 +20,12 @@ interface User {
     // other user properties from auth token
 }
 
-// Define Context type (enhance with actual user type from auth)
-interface ResolverContext {
-    user?: User; // User object populated by auth middleware
+// Define Context type
+export interface ResolverContext {
+    user?: SupabaseUser; // Use the renamed type
     request: Request;
+    supabase: SupabaseClient; // Use SupabaseClient type
+    supabaseAdmin: SupabaseClient; // Use SupabaseClient type
 }
 
 // Helper to get user ID, throws error if not authenticated
@@ -48,27 +53,23 @@ export const resolvers = {
     myCanvases: async (_parent: unknown, _args: unknown, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
         console.log(`Resolving: myCanvases for user ${userId}`);
-        // RLS handles authorization at the DB level
-        const canvases = await getCanvasesByUserId(userId);
-        // Map internal record (potentially different structure) to GraphQL type if needed
-        // In this case, CanvasRecord and GraphQL Canvas type are similar
+        // Pass context to use the request-specific client
+        const canvases = await getCanvasesByUserId(userId, context);
         return canvases;
     },
 
     // TODO: Apply proper authorization checks based on context.user
     canvas: async (_parent: unknown, { id }: { id: string }, context: ResolverContext) => {
-        const userId = getUserIdFromContext(context); // Ensures user is authenticated
+        const userId = getUserIdFromContext(context); // Still good for auth check
         console.log(`Resolving: canvas with ID: ${id}`);
-        // RLS handles authorization at the DB level (own or public)
-        const canvas = await getCanvasById(id);
+        // Pass context to use the request-specific client
+        const canvas = await getCanvasById(id, context);
         if (!canvas) {
             console.log(`Canvas ${id} not found or user ${userId} lacks access.`);
-            // Use GraphQLError for specific error types
             throw new GraphQLError('Canvas not found', {
                  extensions: { code: 'NOT_FOUND', canvasId: id },
             });
         }
-        // Map internal record to GraphQL type if needed
         return canvas;
     },
   },
@@ -77,8 +78,8 @@ export const resolvers = {
     createCanvas: async (_parent: unknown, { title }: { title?: string }, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
         console.log(`Resolving: createCanvas for user ${userId}`);
-        // RLS handles authorization at the DB level
-        const newCanvas = await createCanvasRecord({ userId, title });
+        // Now passing the context to createCanvasRecord to use the admin client
+        const newCanvas = await createCanvasRecord({ userId, title }, context);
         // Map internal record to GraphQL type if needed
         return newCanvas;
     },
