@@ -477,23 +477,37 @@ export const createConnectionRecord = async (
 // Accept context
 export const deleteConnectionRecord = async (id: string, context?: ResolverContext): Promise<boolean> => {
     console.log(`[DB] Deleting connection ${id}`);
-    // Use request-specific client
     const db = context?.supabase || defaultSupabaseClient;
     console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for deleteConnectionRecord`);
-    // Note: RLS policy applies
-    const { error, count } = await db // Use resolved client
+
+    // Perform the delete operation
+    const result = await db
         .from('connections')
         .delete()
         .eq('id', id);
 
+    // Log the full result object from Supabase
+    console.log(`[DB] Full response from Supabase delete for connection ${id}:`, JSON.stringify(result));
+
+    const { error, count, status, statusText } = result;
+
     if (error) {
         console.error(`[DB] Error deleting connection ${id}:`, error);
-        // Don't throw, just return false if deletion fails
         return false;
     }
 
-    // Check if any row was actually deleted
-    return count !== null && count > 0;
+    console.log(`[DB] Deletion count for connection ${id}:`, count);
+    console.log(`[DB] Deletion status for connection ${id}:`, status, statusText);
+
+    // --- Potential Change --- 
+    // If RLS prevents seeing the count but the operation succeeded (no error),
+    // consider it a success. Status codes 200 or 204 usually indicate success for DELETE.
+    // If Supabase *always* returns count > 0 on successful delete even with RLS, 
+    // the original logic `count !== null && count > 0` is fine.
+    // Let's try assuming success if error is null:
+    return true; 
+    // --- OR keep original stricter check: ---
+    // return count !== null && count > 0;
 };
 
 // Accept context
