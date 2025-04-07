@@ -8,6 +8,3 @@ alwaysApply: true
 
 - focus on maintainability and reability
 - use module base code architecture to easier maintain independent module in the code
-- frequent commit
-- write unit test for every scenario
-- run the test before making commit

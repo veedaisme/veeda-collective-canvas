@@ -58,6 +58,16 @@
     *   Fixed frontend `ReferenceError` for `handleTitleSave` and `updateCanvasTitleMutation`.
     *   Corrected `graphql-scalars` import path in backend resolvers and cached dependency.
 
+*   **Milestone:** Integrated Supabase PostgreSQL Database.
+    *   Installed Supabase CLI and initialized local development environment.
+    *   Defined database schema (Canvases, Blocks, Connections) with RLS policies for user ownership.
+    *   Replaced in-memory data stores (`db.ts`) with Supabase client operations (select, insert, update, delete).
+    *   Implemented Supabase authentication middleware in the backend.
+    *   Updated frontend to use Supabase client for authentication (Login/Signup).
+    *   Refactored frontend routes and data fetching to handle authenticated sessions and redirects.
+    *   Ensured data operations correctly use user-specific Supabase client via context to respect RLS.
+    *   Fixed issues related to updating canvas titles and creating blocks due to incorrect client usage or schema mismatches (using `PositionInput`, standard `JSON` scalar).
+
 *   **Next Steps:**
-    *   Connect backend to PostgreSQL database.
-    *   Implement User Authentication.
+    *   Refine UI/UX.
+    *   Implement more block types.
