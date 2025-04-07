@@ -98,5 +98,9 @@
     *   Fixed issues related to updating canvas titles and creating blocks due to incorrect client usage or schema mismatches (using `PositionInput`, standard `JSON` scalar).
 
 *   **Next Steps:**
-    *   Refine UI/UX.
-    *   Implement more block types.
+    *   Implement double-click on canvas background to trigger block creation modal at that position.
+    *   Implement link preview (fetch title/favicon) for link blocks, potentially using a backend function.
+    *   Refine UI/UX (e.g., styling consistency, loading/error states).
+    *   Implement Image Blocks (BM-3).
+    *   Implement basic Sharing features (SV-1, SV-2, SV-3).
+    *   Re-enable/refactor text block content editing.
