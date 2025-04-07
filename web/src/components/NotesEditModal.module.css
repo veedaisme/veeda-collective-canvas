@@ -1,0 +1,80 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+.modalContent {
+    background-color: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    min-width: 400px; /* Adjust as needed */
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Spacing between elements */
+}
+
+.modalContent h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.4rem;
+    color: #333;
+}
+
+.notesTextarea {
+    width: 100%;
+    min-height: 150px; /* Adjust as needed */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit; /* Use the same font as the rest of the app */
+    font-size: 1rem;
+    resize: vertical; /* Allow vertical resizing */
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.modalActions button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.modalActions button:first-of-type { /* Save button */
+    background-color: #007bff;
+    color: white;
+}
+
+.modalActions button:first-of-type:hover {
+    background-color: #0056b3;
+}
+
+.modalActions button:last-of-type { /* Cancel button */
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.modalActions button:last-of-type:hover {
+    background-color: #dcdcdc;
+}
+
+.modalActions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+} 

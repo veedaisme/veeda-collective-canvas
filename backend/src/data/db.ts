@@ -27,6 +27,7 @@ export interface BlockRow {
     height: number;
     created_at: string;
     updated_at: string;
+    notes: string | null;
 }
 
 export interface ConnectionRow {
@@ -61,6 +62,7 @@ export interface BlockRecord {
     size: { width: number; height: number }; // Mapped from width, height
     createdAt: Date; // Mapped from created_at
     updatedAt: Date; // Mapped from updated_at
+    notes?: string | null;
 }
 
 export interface ConnectionRecord {
@@ -219,6 +221,7 @@ function mapBlockRowToRecord(row: BlockRow): BlockRecord {
         size: { width: row.width, height: row.height }, // Assuming size is stored as width/height columns
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
+        notes: row.notes || null,
     };
 }
 
@@ -348,31 +351,60 @@ export const updateBlockRecordPosition = async (id: string, position: { x: numbe
 
 // Accept context
 export const updateBlockRecordContent = async (id: string, content: any, context?: ResolverContext): Promise<BlockRecord | null> => {
-    console.log(`[DB] Updating block content ${id}`);
-    // Use request-specific client
+    console.log(`[DB] Updating content for block ${id}`);
     const db = context?.supabase || defaultSupabaseClient;
     console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateBlockRecordContent`);
-    // Note: RLS policy applies
-    // TODO: Add validation based on block.type if necessary
-    const { data: updatedData, error } = await db // Use resolved client
+
+    // RLS handles authorization
+    const { data: updatedData, error } = await db
         .from('blocks')
-        .update({ content: content })
+        .update({ content }) // Assuming 'content' is a JSONB column
         .eq('id', id)
         .select()
         .single();
 
     if (error) {
-        if (error.code === 'PGRST116') { // Not found / No permission
-            console.warn(`[DB] Block ${id} not found or user lacks permission to update content.`);
-            return null;
-        }
+         if (error.code === 'PGRST116') {
+             console.warn(`[DB] Block ${id} not found or user lacks permission to update content.`);
+             return null;
+         }
         console.error(`[DB] Error updating block content ${id}:`, error);
         throw new Error(`Failed to update block content: ${error.message}`);
     }
      if (!updatedData) {
-        console.warn(`[DB] Block ${id} not found or no data returned after content update attempt.`);
-        return null;
+         console.warn(`[DB] Block ${id} not found or no data returned after content update attempt.`);
+         return null;
+     }
+
+    return mapBlockRowToRecord(updatedData);
+};
+
+// Update Block Notes
+export const updateBlockRecordNotes = async (id: string, notes: string, context?: ResolverContext): Promise<BlockRecord | null> => {
+    console.log(`[DB] Updating notes for block ${id}`);
+    const db = context?.supabase || defaultSupabaseClient;
+    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateBlockRecordNotes`);
+
+    // RLS handles authorization
+    const { data: updatedData, error } = await db
+        .from('blocks')
+        .update({ notes }) // Update the notes column
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) {
+         if (error.code === 'PGRST116') { // PostgREST code for "no rows returned"
+             console.warn(`[DB] Block ${id} not found or user lacks permission to update notes.`);
+             return null;
+         }
+        console.error(`[DB] Error updating block notes ${id}:`, error);
+        throw new Error(`Failed to update block notes: ${error.message}`);
     }
+     if (!updatedData) {
+         console.warn(`[DB] Block ${id} not found or no data returned after notes update attempt.`);
+         return null;
+     }
 
     return mapBlockRowToRecord(updatedData);
 };

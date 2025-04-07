@@ -1,5 +1,20 @@
 # Project Progress
 
+## April 7, 2025
+
+*   **Milestone:** Block Notes and Link Block Creation Implemented.
+    *   Added `notes` column to `blocks` table in Supabase.
+    *   Added `updateBlockNotes` mutation to GraphQL schema and resolvers.
+    *   Implemented `updateBlockRecordNotes` data access function.
+    *   Added `UPDATE_BLOCK_NOTES_MUTATION` and `updateBlockNotes` API function (frontend).
+    *   Added `NotesEditModal` component and CSS.
+    *   Updated `CanvasViewPage` to handle double-clicking non-text blocks to open the notes modal.
+    *   Refactored `CanvasViewPage` and `CanvasWorkspace` to correctly manage React Flow state (fixing unnecessary position updates).
+    *   Changed "Add New Block" to open `BlockCreationModal`.
+    *   Implemented `isUrl` utility function.
+    *   Updated block creation logic in `CanvasViewPage` to detect URLs in the modal input and create blocks with `type: 'link'` and `{ url: ... }` content, otherwise creating `type: 'text'` blocks.
+    *   Fixed prop mismatches and linter errors related to block/notes editing.
+
 ## April 5, 2025
 
 *   **Milestone:** Block Positioning Implemented.

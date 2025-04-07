@@ -46,6 +46,9 @@ export const typeDefs = `
     """Updates the content of a block"""
     updateBlockContent(blockId: ID!, content: JSON!): Block # Use JSON
 
+    """Updates the notes for a block"""
+    updateBlockNotes(blockId: ID!, notes: String!): Block # Add notes mutation
+
     # TODO: Add mutations for updateBlockSize later
     # TODO: Add mutation for updateBlockOrder later
     # --- Connection Mutations ---
@@ -77,6 +80,7 @@ export const typeDefs = `
       createdAt: DateTime!
       updatedAt: DateTime!
       # Add notes, connections relations later
+      notes: String # Add notes field
   }
 
   type Connection {

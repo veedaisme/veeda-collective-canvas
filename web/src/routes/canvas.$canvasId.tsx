@@ -20,9 +20,12 @@ import 'reactflow/dist/style.css'; // Default styles for react-flow
 
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
-import { Connection as ApiConnection, Block, Canvas as CanvasBase, CanvasData, createBlock, createConnection, deleteConnection, fetchCanvasById, undoBlockCreation, updateBlockContent, updateBlockPosition, updateCanvasTitle } from '../lib/api';
+import { NotesEditModal } from '../components/NotesEditModal';
+import { BlockCreationModal } from '../components/BlockCreationModal';
+import { Connection as ApiConnection, Block, Canvas as CanvasBase, CanvasData, createBlock, createConnection, deleteConnection, fetchCanvasById, undoBlockCreation, updateBlockContent, updateBlockPosition, updateCanvasTitle, updateBlockNotes } from '../lib/api';
 import { supabase } from '../lib/supabaseClient'; // Import supabase
 import styles from './canvas.$canvasId.module.css';
+import { isUrl } from '../lib/utils';
 
 // Define an extended Canvas type that includes connections
 // This is temporary until the actual type in api.ts is updated
@@ -31,15 +34,26 @@ type Canvas = CanvasBase & {
 };
 
 // --- Helper: Map API Block to ReactFlow Node ---
-const mapBlockToNode = (block: Block): Node => ({
-    id: block.id,
-    type: 'default', // Or derive from block.type
-    position: block.position,
-    data: { 
-        label: block.content?.text || block.type,
-        rawBlock: block // Include original block data
-    },
-});
+const mapBlockToNode = (block: Block): Node => {
+    let label = block.type; // Default label is the type
+    if (block.type === 'text' && typeof block.content?.text === 'string') {
+        label = block.content.text;
+    } else if (block.type === 'link' && typeof block.content?.url === 'string') {
+        label = block.content.url; // Or fetch title later?
+    }
+    // Add more types as needed
+
+    return {
+        id: block.id,
+        type: 'default', // Consider custom node types later
+        position: block.position,
+        data: {
+            label: label, // Use safely determined label
+            notes: block.notes,
+            rawBlock: block // Include original block data
+        },
+    }
+};
 
 // --- Helper: Map API Connection to ReactFlow Edge ---
 const mapConnectionToEdge = (conn: ApiConnection): Edge => ({
@@ -135,6 +149,15 @@ function CanvasViewPage() {
   // Block Content Editing State
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
+
+  // Block Notes Editing State
+  const [editingNotesBlockId, setEditingNotesBlockId] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState<string>("");
+
+  // NEW: Block Creation Input State
+  const [isCreatingBlockInput, setIsCreatingBlockInput] = useState<boolean>(false);
+  // Store the intended position for the new block
+  const [newBlockPosition, setNewBlockPosition] = useState<{ x: number; y: number }>({ x: 100, y: 100 });
 
   // Create Block Mutation
   const { mutate: performCreateBlock, isPending: isCreatingBlock } = useMutation({
@@ -300,12 +323,12 @@ function CanvasViewPage() {
 
   // Handler for creating a new block (passed to CanvasHeader)
   const handleCreateNewBlock = () => {
-    performCreateBlock({
-      canvasId,
-      type: 'text',
-      position: { x: Math.random() * 200, y: Math.random() * 100 }, // Randomize slightly
-      content: { text: 'New Block' },
-    });
+    // Ideally, calculate position based on current view or last click
+    // For now, use a default or stored position
+    const position = { x: Math.random() * 400, y: Math.random() * 400 }; // Example position
+    setNewBlockPosition(position);
+    setIsCreatingBlockInput(true);
+    // We no longer call performCreateBlock directly here
   };
 
   // Handler for showing undo notification
@@ -336,15 +359,26 @@ function CanvasViewPage() {
   // NEW: Handler for Node Double Click (passed to CanvasWorkspace)
   const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
       console.log("Node Double Clicked:", node);
-      // Find the original block data (assuming it's needed or use node.data)
-      const blockData = canvasData?.blocks?.find(b => b.id === node.id);
-      if (blockData && blockData.type === 'text') { // Only allow editing text blocks for now
+      // Find the original block data using the rawBlock stored in node data
+      const blockData = node.data.rawBlock as Block | undefined;
+
+      if (!blockData) {
+          console.error("Could not find raw block data in node:", node);
+          return;
+      }
+
+      // Always allow editing notes first?
+      // OR: Edit content for text, notes for others?
+      // Current: Edit content for text, notes for link/other.
+
+      if (blockData.type === 'text') { // If text block, edit content
         setEditingContent(blockData.content?.text || '');
         setEditingBlockId(blockData.id);
-      } else {
-          console.log("Editing not supported for type:", blockData?.type);
+      } else { // For *any other* type (including 'link'), edit notes
+          setEditingNotes(blockData.notes || '');
+          setEditingNotesBlockId(blockData.id);
       }
-  }, [canvasData?.blocks]); // Dependency on blocks data
+  }, []); // No dependency on canvasData.blocks needed now
 
   // NEW: Handler for saving edited content
   const handleContentSave = () => {
@@ -453,6 +487,86 @@ function CanvasViewPage() {
       // e.g., deletedNodes.forEach(node => performDeleteBlock(node.id));
   }, []); // Add dependencies if needed
 
+  // NEW: Handler for saving from the BlockCreationModal
+  const handleBlockCreationSave = (inputValue: string) => {
+      const trimmedInput = inputValue.trim();
+      if (!trimmedInput) {
+          setIsCreatingBlockInput(false); // Just close if empty
+          return;
+      }
+
+      let blockType: 'text' | 'link' = 'text';
+      let blockContent: any = { text: trimmedInput };
+
+      if (isUrl(trimmedInput)) {
+          console.log("[Block Creation] Detected URL:", trimmedInput);
+          blockType = 'link';
+          // Simple content structure for link block
+          blockContent = { url: trimmedInput };
+      } else {
+          console.log("[Block Creation] Detected Text:", trimmedInput);
+          blockType = 'text';
+          blockContent = { text: trimmedInput };
+      }
+
+      console.log(`[Page] Creating new block (${blockType}) on canvas ${canvasId}`);
+      performCreateBlock({
+          canvasId: canvasId,
+          type: blockType,
+          position: newBlockPosition,
+          content: blockContent,
+      });
+
+      setIsCreatingBlockInput(false); // Close modal after initiating save
+  };
+
+  // NEW: Handler for canceling the BlockCreationModal
+  const handleBlockCreationCancel = () => {
+      setIsCreatingBlockInput(false);
+  };
+
+  // NEW: Mutation for updating block notes
+  const { mutate: performUpdateBlockNotes, isPending: isUpdatingNotes } = useMutation({
+      mutationFn: updateBlockNotes,
+      onSuccess: (updatedBlockData, variables) => {
+          if (!updatedBlockData) return;
+          console.log(`Block ${variables.blockId} notes updated`);
+          // Update cache
+          queryClient.setQueryData<CanvasData>(['canvas', canvasId], (oldData) => { // Use CanvasData
+              if (!oldData || !oldData.blocks) return oldData;
+              return {
+                  ...oldData,
+                  blocks: oldData.blocks.map(block =>
+                      block.id === variables.blockId
+                          ? { ...block, notes: updatedBlockData.notes, updatedAt: updatedBlockData.updatedAt }
+                          : block
+                  ),
+              };
+          });
+          setEditingNotesBlockId(null); // Exit editing mode
+      },
+      onError: (err, variables) => {
+          console.error(`Error updating notes for block ${variables.blockId}:`, err);
+          alert(`Failed to save block notes for ${variables.blockId}.`);
+      },
+  });
+
+  // Handle saving edited notes (Passed to NotesEditModal as onSave)
+  const handleNotesSave = (newNotes: string) => {
+      if (editingNotesBlockId === null) return;
+      performUpdateBlockNotes({
+          blockId: editingNotesBlockId,
+          notes: newNotes,
+      });
+      // Modal is closed in onSuccess now
+  };
+
+  // Handle canceling notes edit (Passed to NotesEditModal as onCancel)
+  const handleNotesCancel = () => {
+      setEditingNotesBlockId(null);
+      setEditingNotes(""); // Clear potentially edited notes
+  };
+
   // Handle loading and error states from useQuery
   if (isCanvasLoading && !canvasData) { // Check if loading initial data (canvasData is undefined)
       return <div>Loading Canvas...</div>; // Or a spinner component
@@ -477,8 +591,10 @@ function CanvasViewPage() {
       />
       <CanvasWorkspace
         key={canvasId}
-        initialBlocks={canvasData.blocks || []} 
-        initialEdges={edges}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         canvasTitle={canvasData.title}
         onSaveTitle={handleTitleSave}
         onNodeDragStop={handleNodeDragStop}
@@ -518,6 +634,32 @@ function CanvasViewPage() {
               </div>
           </div>
       )}
+
+      {/* Block Notes Edit Modal - Fix Props */}
+      {editingNotesBlockId && (
+          <NotesEditModal
+              // Pass props matching the component definition
+              initialNotes={editingNotes} // Pass current notes state
+              onSave={handleNotesSave} // Pass save handler
+              onCancel={handleNotesCancel} // Pass cancel handler
+              isSaving={isUpdatingNotes} // Pass mutation pending state
+              // Remove incorrect props
+              // blockId={editingNotesBlockId}
+              // notes={editingNotes}
+              // onNotesChange={(newNotes: string) => setEditingNotes(newNotes)} // State is managed internally by modal, save on submit
+              // onClose={() => setEditingNotesBlockId(null)}
+          />
+      )}
+
+      {/* NEW: Block Creation Modal */}
+      {isCreatingBlockInput && (
+          <BlockCreationModal
+              onSave={handleBlockCreationSave}
+              onCancel={handleBlockCreationCancel}
+              isSaving={isCreatingBlock} // Use the same pending flag
+          />
+      )}
+
     </div>
   );
 }

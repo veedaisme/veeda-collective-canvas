@@ -3,6 +3,7 @@ import {
     getCanvasesByUserId, getCanvasById, createCanvasRecord, updateCanvasRecord,
     getBlocksByCanvasId, getBlockById, createBlockRecord,
     updateBlockRecordPosition, updateBlockRecordContent,
+    updateBlockRecordNotes,
     isWithinUndoGracePeriod,
     type CanvasRecord, type BlockRecord, type ConnectionRecord,
     createConnectionRecord, deleteConnectionRecord,
@@ -219,6 +220,31 @@ export const resolvers = {
             });
         }
         // Map internal record to GraphQL type if needed
+        return updatedBlock;
+    },
+
+    // updateBlockNotes resolver
+    updateBlockNotes: async (_parent: unknown, { blockId, notes }: { blockId: string; notes: string }, context: ResolverContext) => {
+        const userId = getUserIdFromContext(context);
+
+        // Basic validation (notes can be empty string)
+        if (notes === null || notes === undefined) {
+            throw new GraphQLError("Notes cannot be null.", {
+                extensions: { code: 'BAD_USER_INPUT', argumentName: 'notes' }
+            });
+        }
+
+        console.log(`Resolving: updateBlockNotes for Block ID: ${blockId} by user ${userId}`);
+        // RLS handles block ownership check at DB level during update
+        const updatedBlock = await updateBlockRecordNotes(blockId, notes, context);
+
+        if (!updatedBlock) {
+            console.log(`Update notes failed: Block ${blockId} not found or user ${userId} lacks permission.`);
+            throw new GraphQLError('Block not found or update forbidden', {
+                extensions: { code: 'NOT_FOUND_OR_FORBIDDEN', blockId: blockId },
+            });
+        }
+        // Map internal record to GraphQL type is handled by mapBlockRowToRecord
         return updatedBlock;
     },
 

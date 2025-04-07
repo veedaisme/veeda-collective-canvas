@@ -1,4 +1,4 @@
-import { GraphQLClient, gql } from 'graphql-request'
+import { GraphQLClient, gql, Variables } from 'graphql-request'
 import { supabase } from './supabaseClient'; // Import the frontend supabase client
 
 // --- GraphQL Client Setup ---
@@ -12,7 +12,7 @@ if (!endpoint) {
 const gqlClient = new GraphQLClient(endpoint);
 
 // Function to make authenticated requests
-const makeAuthenticatedRequest = async <T, V = Record<string, any>>(
+const makeAuthenticatedRequest = async <T, V extends Variables = Variables>(
     query: string,
     variables?: V
 ): Promise<T> => {
@@ -26,7 +26,6 @@ const makeAuthenticatedRequest = async <T, V = Record<string, any>>(
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // Make the request with dynamic headers
     return gqlClient.request<T, V>(query, variables, headers);
 };
 
@@ -36,11 +35,12 @@ export interface Block {
     id: string;
     canvasId: string;
     type: string;
-    content: any; // JSON
+    content: unknown; // JSON - Use unknown instead of any
     position: { x: number; y: number }; // JSON
     size: { width: number; height: number }; // JSON
     createdAt: string; // DateTime
     updatedAt: string; // DateTime
+    notes?: string | null; // Add notes field
 }
 
 export interface Canvas {
@@ -102,6 +102,7 @@ const GET_CANVAS_BY_ID_QUERY = gql`
           size
           createdAt
           updatedAt
+          notes
       }
       connections {
           id
@@ -179,6 +180,16 @@ const UPDATE_BLOCK_CONTENT_MUTATION = gql`
     }
 `;
 
+const UPDATE_BLOCK_NOTES_MUTATION = gql`
+    mutation UpdateBlockNotes($blockId: ID!, $notes: String!) {
+        updateBlockNotes(blockId: $blockId, notes: $notes) {
+            id # Return fields needed for cache update
+            notes
+            updatedAt
+        }
+    }
+`;
+
 // --- API Functions ---
 
 export const fetchMyCanvases = async (): Promise<Canvas[]> => {
@@ -229,7 +240,7 @@ export const createBlock = async (variables: {
     canvasId: string;
     type: string;
     position: { x: number; y: number };
-    content?: any;
+    content?: unknown; // Use unknown
 }): Promise<Block> => {
     // Use the authenticated request function
      try {
@@ -259,7 +270,7 @@ export const updateBlockPosition = async (variables: { blockId: string; position
     }
 };
 
-export const updateBlockContent = async (variables: { blockId: string; content: any }): Promise<Pick<Block, 'id' | 'content' | 'updatedAt'> | null> => {
+export const updateBlockContent = async (variables: { blockId: string; content: unknown }): Promise<Pick<Block, 'id' | 'content' | 'updatedAt'> | null> => {
     try {
         // Use the authenticated request function
         const data = await makeAuthenticatedRequest<{ updateBlockContent: Pick<Block, 'id' | 'content' | 'updatedAt'> }>(
@@ -284,6 +295,23 @@ export const undoBlockCreation = async (blockId: string): Promise<boolean> => {
     } catch (error) {
         console.error(`Error undoing block creation ${blockId}:`, error);
         return false;
+    }
+};
+
+// Update Block Notes API function
+export const updateBlockNotes = async (variables: { blockId: string; notes: string }): Promise<Pick<Block, 'id' | 'notes' | 'updatedAt'> | null> => {
+    try {
+        const data = await makeAuthenticatedRequest<{
+            updateBlockNotes: Pick<Block, 'id' | 'notes' | 'updatedAt'>
+        }>(
+            UPDATE_BLOCK_NOTES_MUTATION,
+            variables
+        );
+        return data.updateBlockNotes;
+    } catch (error) {
+        console.error("Error updating block notes:", error);
+        // Handle specific errors (e.g., not found, forbidden) if needed
+        return null;
     }
 };
 

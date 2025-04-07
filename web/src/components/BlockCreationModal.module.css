@@ -1,0 +1,92 @@
+/* Inherit base styles from NotesEditModal if desired, or define separately */
+/* For simplicity, duplicating relevant styles */
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* Slightly higher than notes modal if needed */
+}
+
+.modalContent {
+    background-color: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    min-width: 350px; /* Adjust as needed */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modalContent h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.3rem;
+    color: #333;
+}
+
+.modalContent p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.inputTextarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.modalActions button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+/* Style the primary (Create) button */
+.modalActions button:first-of-type {
+    background-color: #28a745; /* Green for create */
+    color: white;
+}
+
+.modalActions button:first-of-type:hover {
+    background-color: #218838;
+}
+
+/* Style the secondary (Cancel) button */
+.modalActions button:last-of-type {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.modalActions button:last-of-type:hover {
+    background-color: #dcdcdc;
+}
+
+/* Disabled state for buttons */
+.modalActions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+} 

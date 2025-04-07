@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactFlow, {
     Controls, Background, MiniMap,
-    useNodesState, useEdgesState, Node, Edge, BackgroundVariant,
+    Node, Edge, BackgroundVariant,
     OnNodesChange, NodeChange,
+    OnEdgesChange, EdgeChange,
     NodeProps,
     addEdge,
     type Connection,
@@ -28,8 +29,10 @@ const mapBlockToNode = (block: Block): Node => ({
 });
 
 interface CanvasWorkspaceProps {
-    initialBlocks: Block[];
-    initialEdges: Edge[];
+    nodes: Node[];
+    edges: Edge[];
+    onNodesChange: OnNodesChange;
+    onEdgesChange: OnEdgesChange;
     canvasTitle: string;
     onSaveTitle: (newTitle: string) => void;
     onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
@@ -40,8 +43,10 @@ interface CanvasWorkspaceProps {
 }
 
 export function CanvasWorkspace({
-    initialBlocks,
-    initialEdges,
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
     canvasTitle,
     onSaveTitle,
     onNodeDragStop,
@@ -49,40 +54,16 @@ export function CanvasWorkspace({
     onConnect,
     onEdgesDelete
 }: CanvasWorkspaceProps) {
-    const initialNodes = initialBlocks.map(mapBlockToNode);
-    const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
     const [undoBlockId, setUndoBlockId] = useState<string | null>(null);
     const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
-
-    // Sync internal nodes state if the initialBlocks prop changes externally
-    useEffect(() => {
-        // Basic sync - assumes parent manages the canonical list
-        setNodes(initialBlocks.map(mapBlockToNode));
-        setEdges(initialEdges);
-    }, [initialBlocks, setNodes, initialEdges, setEdges]);
-
-    // Wrap internal onNodesChange to potentially notify parent or add custom logic
-    const handleNodesChange: OnNodesChange = useCallback(
-        (changes: NodeChange[]) => {
-            onNodesChangeInternal(changes);
-            // TODO: Could filter for position changes and debounce updates to parent/backend
-            // console.log("Node changes:", changes);
-        },
-        [onNodesChangeInternal]
-    );
 
     const { mutate: performUndoBlockCreation } = useMutation({
         mutationFn: undoBlockCreation,
         onSuccess: (success, blockId) => {
             if (success) {
                 console.log(`Block ${blockId} undone`);
-                // No need to manually filter nodes if parent updates initialBlocks
-                // setNodes((nds) => nds.filter((node) => node.id !== blockId));
                 setUndoBlockId(null);
                 if (undoTimeoutId) clearTimeout(undoTimeoutId);
-                // Parent should refetch/update initialBlocks which will sync via useEffect
             } else {
                 handleUndoFail(blockId);
             }
@@ -100,22 +81,6 @@ export function CanvasWorkspace({
          if (undoBlockId === blockId) setUndoBlockId(null);
          if (undoTimeoutId) clearTimeout(undoTimeoutId);
     }
-
-    // Expose function to parent to trigger the undo notification
-    // This might be better handled via a ref if preferred
-    const showUndoNotification = useCallback((blockId: string) => {
-        console.log("[Workspace] Showing undo for", blockId);
-        setUndoBlockId(blockId);
-        if (undoTimeoutId) clearTimeout(undoTimeoutId);
-        const timeoutId = window.setTimeout(() => { // Use window.setTimeout for clarity
-            setUndoBlockId(null);
-        }, UNDO_GRACE_PERIOD_MS - 1000);
-        setUndoTimeoutId(timeoutId);
-    }, [undoTimeoutId]);
-
-    // Make showUndoNotification available to parent (e.g., via ref or context)
-    // For now, we rely on parent calling it after createBlock success.
-    // We need to lift the mutation or pass down a callback.
 
     const handleUndoClick = () => {
         if (undoBlockId) {
@@ -143,7 +108,7 @@ export function CanvasWorkspace({
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={handleNodesChange}
+                onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onNodeDragStop={onNodeDragStop}
                 onNodeDoubleClick={onNodeDoubleClick}
