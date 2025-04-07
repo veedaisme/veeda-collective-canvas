@@ -1,0 +1,109 @@
+/* Base styling for the card node */
+.cardBase {
+    width: 250px; /* Default width, can be adjusted */
+    border-radius: var(--radius); /* Use shadcn radius */
+    /* Use shadcn card background/border defined by theme */
+    /* background: hsl(var(--card)); */
+    /* border: 1px solid hsl(var(--border)); */ 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    position: relative; /* For handle positioning */
+    padding: 0.5rem; /* Add base padding */
+}
+
+.cardBase:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+/* Style when node is selected */
+.selected {
+    box-shadow: 0 0 0 2px hsl(var(--ring)); /* Use shadcn ring color */
+    border-color: hsl(var(--ring)); 
+}
+
+.cardContent {
+    padding: 0.25rem 0.5rem; /* Reduce top/bottom padding, keep left/right */
+    /* Remove border-top as header has border-bottom */
+    /* border-top: 1px solid hsl(var(--border)); */
+    font-size: 0.95rem; /* Default size for main content */
+    color: hsl(var(--card-foreground)); 
+    font-style: normal; /* Reset font style */
+    /* Reset white-space and word-break if needed */
+    /* white-space: normal; */
+    /* word-break: normal; */
+    /* Add max-height and overflow */
+    /* max-height: 200px;  */
+    overflow-y: auto;
+}
+
+/* Style specific content types if needed */
+.contentText {
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0; /* Reset margin */
+    padding: 0.25rem; /* Reduce padding */
+}
+
+.contentLink {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: hsl(var(--primary));
+    cursor: default;
+    display: block; /* Ensure ellipsis works */
+    margin: 0; /* Reset margin */
+    padding: 0.5rem; /* Add padding to link content */
+}
+
+.contentFallback {
+    font-style: italic;
+    font-size: 0.9em;
+    color: hsl(var(--muted-foreground));
+    margin: 0; /* Reset margin */
+    padding: 0.5rem; /* Add padding to fallback content */
+}
+
+/* New style for notes footnote */
+.notesFootnote {
+    margin-top: 0.75rem; /* Space above notes */
+    padding-top: 0.5rem; /* Space within notes area */
+    border-top: 1px dashed hsl(var(--border)); /* Separator */
+    font-size: 0.8rem; /* Smaller font size */
+    color: hsl(var(--muted-foreground)); 
+    font-style: italic;
+    white-space: pre-wrap; 
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+/* Remove notesPreview as styles are now on cardContent */
+/* .notesPreview { ... } */
+
+/* Handle styling */
+/* Make handles small and subtle, position slightly offset */
+.handle {
+    width: 8px;
+    height: 8px;
+    background: hsl(var(--border));
+    border: 1px solid hsl(var(--background)); /* Make visible on card background */
+    border-radius: 50%;
+}
+
+/* Position handles slightly outside the card bounds */
+.handle[data-position="top"] {
+    top: -5px;
+}
+
+.handle[data-position="bottom"] {
+    bottom: -5px;
+}
+
+/* Hide handles until node is selected or hovered (optional) */
+/* .cardBase .handle { 
+    opacity: 0;
+    transition: opacity 0.2s;
+} */
+/* .selected .handle, */
+/* .cardBase:hover .handle {
+    opacity: 1;
+} */ 

@@ -14,14 +14,15 @@ import 'reactflow/dist/style.css';
 import { useMutation } from '@tanstack/react-query';
 import { undoBlockCreation, Block } from '../lib/api';
 import styles from './CanvasWorkspace.module.css';
-import LinkNode from './LinkNode';
+import StyledBlockNode from './StyledBlockNode';
 
 const UNDO_GRACE_PERIOD_MS = 30 * 1000;
 
 // Define the node types object
 const nodeTypes = {
-    linkNode: LinkNode,
-    // Add other custom node types here if needed
+    styledBlockNode: StyledBlockNode,
+    // linkNode: LinkNode,
+    // default: DefaultNode,
 };
 
 // --- Helper: Map API Block to ReactFlow Node ---

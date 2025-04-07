@@ -42,27 +42,29 @@ function isLinkBlockContent(content: BlockContent | null | undefined): content i
 
 // --- Helper: Map API Block to ReactFlow Node ---
 const mapBlockToNode = (block: Block): Node => {
-    let label = block.type;
-    let nodeType = 'default';
-
-    // Use type guards
-    if (block.type === 'text' && isTextBlockContent(block.content)) {
+    // Determine label based on type and content
+    let label = block.type; // Default label is the type
+    if (isTextBlockContent(block.content)) {
         label = block.content.text;
-        nodeType = 'default';
-    } else if (block.type === 'link' && isLinkBlockContent(block.content)) {
+    } else if (isLinkBlockContent(block.content)) {
         label = block.content.url;
-        nodeType = 'linkNode';
     }
+
+    // Always use the StyledBlockNode type now
+    const nodeType = 'styledBlockNode';
 
     return {
         id: block.id,
-        type: nodeType,
+        type: nodeType, // Use the new styled node type for all blocks
         position: block.position,
+        // Pass data expected by StyledBlockNode
         data: {
-            label: label,
+            label: label, // Pass determined label
             notes: block.notes,
-            rawBlock: block
+            rawBlock: block // Pass the full block data
         },
+        // Optionally define width/height based on content or type?
+        // style: { width: 250 }, 
     }
 };
 
