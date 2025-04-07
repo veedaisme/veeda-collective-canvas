@@ -26,8 +26,7 @@ interface ResolverContext {
 // Helper to get user ID, throws error if not authenticated
 const getUserIdFromContext = (context: ResolverContext): string => {
     // In a real app, this would come from validating a JWT or session
-    // const userId = context.user?.id;
-    const userId = "user-123"; // MOCK - Replace with actual auth logic
+    const userId = context.user?.id;
     if (!userId) {
         console.error("[AUTH] User ID not found in context.");
         throw new GraphQLError('User is not authenticated', {

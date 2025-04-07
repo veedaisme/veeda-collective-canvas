@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabaseClient'; // Assuming client is here
-import { useNavigate, createFileRoute } from '@tanstack/react-router';
-import styles from './auth.module.css'; // Create this CSS module
+import { supabase } from '@/lib/supabaseClient'; // Use path alias
+import { useNavigate, createFileRoute, Link } from '@tanstack/react-router'; // Add Link for signup
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // Define the Route configuration
 export const Route = createFileRoute('/login')({
@@ -29,6 +32,7 @@ export function LoginPage() {
             }
             console.log('Login successful');
             // Navigate to dashboard or home page after login
+            // TODO: Check for redirect search param
             navigate({ to: '/' });
         } catch (err: any) {
             console.error('Login error:', err.message);
@@ -39,40 +43,56 @@ export function LoginPage() {
     };
 
     return (
-        <div className={styles.authContainer}>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin} className={styles.authForm}>
-                <div>
-                    <label htmlFor="email">Email</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={loading}
-                    />
-                </div>
-                <div>
-                    <label htmlFor="password">Password</label>
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                    />
-                </div>
-                <button type="submit" disabled={loading}>
-                    {loading ? 'Logging in...' : 'Login'}
-                </button>
-                {error && <p className={styles.errorMessage}>{error}</p>}
-            </form>
-             <p>
-                Don't have an account? {' '}
-                <a href="/signup">Sign Up</a>
-            </p>
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Login</CardTitle>
+                    <CardDescription>
+                        Enter your email below to login to your account.
+                    </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleLogin}>
+                    <CardContent className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="m@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                disabled={loading}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                disabled={loading}
+                            />
+                        </div>
+                        {error && (
+                            <p className="text-sm text-red-600">{error}</p>
+                        )}
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4">
+                        <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? 'Logging in...' : 'Sign in'}
+                        </Button>
+                        <div className="text-center text-sm">
+                            Don't have an account?{" "}
+                            <Link to="/signup" className="underline">
+                                Sign up
+                            </Link>
+                        </div>
+                    </CardFooter>
+                </form>
+            </Card>
         </div>
     );
 } 

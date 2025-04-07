@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { createFileRoute, Link, useParams } from '@tanstack/react-router'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import ReactFlow, {
-    Controls, Background, MiniMap, // Basic React Flow components
-    useNodesState, useEdgesState, // Hooks to manage nodes/edges
-    Node, Edge, BackgroundVariant, // Import BackgroundVariant
-    ReactFlowProvider, // Needed for useReactFlow hook if used lower down
-    addEdge,       // Add addEdge utility
-    type Connection, // Add Connection type
-    type OnNodesChange,
-    type OnEdgesChange,
-    type Viewport
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Edge, // Hooks to manage nodes/edges
+  Node,
+  useEdgesState, // Basic React Flow components
+  useNodesState, // Add addEdge utility
+  type Connection
 } from 'reactflow';
 import 'reactflow/dist/style.css'; // Default styles for react-flow
 
-import { fetchCanvasById, updateCanvasTitle, createBlock, undoBlockCreation, updateBlockPosition, updateBlockContent, Canvas, Block, CanvasData, Connection as ApiConnection, createConnection, deleteConnection } from '../lib/api'
-import styles from './canvas.$canvasId.module.css';
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
+import { Connection as ApiConnection, Block, Canvas, CanvasData, createBlock, createConnection, deleteConnection, fetchCanvasById, undoBlockCreation, updateBlockContent, updateBlockPosition, updateCanvasTitle } from '../lib/api';
+import { supabase } from '../lib/supabaseClient'; // Import supabase
+import styles from './canvas.$canvasId.module.css';
 
 // --- Helper: Map API Block to ReactFlow Node ---
 const mapBlockToNode = (block: Block): Node => ({
@@ -31,6 +28,8 @@ const mapBlockToNode = (block: Block): Node => ({
 
 // --- Route Definition ---
 // Loader function to fetch data before the component renders
+// REMOVED from here, now handled in beforeLoad and TanStack Query's useQuery
+/*
 const loader = async ({ params }: { params: { canvasId: string } }) => {
   console.log(`[Loader] Fetching canvas ${params.canvasId}`);
   const canvas = await fetchCanvasById(params.canvasId);
@@ -39,11 +38,43 @@ const loader = async ({ params }: { params: { canvasId: string } }) => {
   }
   return canvas;
 };
+*/
 
 export const Route = createFileRoute('/canvas/$canvasId')({
+  beforeLoad: async ({ location, params }) => {
+    // Check Supabase auth status directly
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // If no session, redirect to login
+    if (!session) {
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: location.href,
+        },
+      });
+    }
+
+    // --- If authenticated, prefetch data --- 
+    // (This replaces the old loader and integrates with TanStack Query)
+    const queryClient = new QueryClient(); // Get query client instance if not available globally
+    try {
+      // Try to fetch the data. If it fails (e.g., not found, not authorized via RLS),
+      // the component's useQuery will handle the error state.
+      // We don't throw here for 404s, let the component handle it.
+      await queryClient.prefetchQuery({
+        queryKey: ['canvas', params.canvasId],
+        queryFn: () => fetchCanvasById(params.canvasId),
+      });
+    } catch (error) {
+       console.error(`[beforeLoad] Error prefetching canvas ${params.canvasId}:`, error);
+       // Don't throw redirect here for data fetching errors, let component handle.
+    }
+    // If logged in, allow loading
+  },
   component: CanvasViewPage,
-  loader: loader, // Use loader to fetch data
-  errorComponent: CanvasErrorComponent, // Component to show on loader error
+  // loader: loader, // Loader removed, data fetching handled by useQuery initialized with prefetch
+  errorComponent: CanvasErrorComponent, // Still useful for errors *within* the component render
 })
 
 // --- Page Component ---

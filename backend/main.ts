@@ -48,18 +48,17 @@ const schema = makeExecutableSchema({
 });
 
 // Yoga setup adjusted for Hono context
-const yoga = createYoga<{
-    honoContext: HonoContext<{ Variables: { user: User | null } }> 
-}, GraphQLContext>({ 
+const yoga = createYoga<
+    HonoContext<{ Variables: { user: User | null } }>, // Argument type is Hono context
+    GraphQLContext // Return type is our GraphQL context
+>({ 
   schema,
-  // The context factory receives the context object passed in the second arg of yoga()
-  context: ({ request, context }): GraphQLContext => { 
-      // Directly access the passed honoContext from the 'context' property
-      const honoContext = context?.honoContext;
-      const user = honoContext?.get('user') ?? null;
+  // The context factory now receives the Hono context directly
+  context: (honoContext: HonoContext<{ Variables: { user: User | null } }>): GraphQLContext => { 
+      const user = honoContext.get('user') ?? null; // Get user directly from Hono context
       console.log(`[GraphQL Context] User from context: ${user?.id ?? 'None'}`);
       return {
-          request: request,
+          request: honoContext.req.raw, // Get raw request from Hono context
           user: user
       };
   },
@@ -77,12 +76,10 @@ const app = new Hono();
 // Apply Auth Middleware *only* to the /graphql route
 app.use('/graphql', authMiddleware);
 
-// Handle GraphQL requests - pass Hono context to Yoga context factory
+// Handle GraphQL requests - pass Hono context directly to Yoga context factory
 app.all("/graphql", (c: HonoContext<{ Variables: { user: User | null } }>) => {
-    // Pass the context object shape expected by the factory
-    return yoga(c.req.raw, { 
-        honoContext: c
-    }); 
+    // Pass Hono context 'c' directly as the second argument
+    return yoga(c.req.raw, c); 
 });
 
 // Basic health check / root route

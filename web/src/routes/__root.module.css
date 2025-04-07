@@ -6,6 +6,9 @@
 }
 
 .header {
+    display: flex; /* Use flexbox for alignment */
+    justify-content: space-between; /* Space out title and controls */
+    align-items: center; /* Vertically align items */
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #e0e0e0;
     background-color: #f8f9fa; /* Light background */
@@ -14,6 +17,27 @@
 .header h1 {
     margin: 0;
     font-size: 1.5rem;
+}
+
+/* Container for auth-related controls (logout button) */
+.authControls {
+    /* Add specific styling if needed, e.g., margin-left: auto; if not using space-between */
+}
+
+/* Styling for the logout button */
+.logoutButton {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background-color: #6c757d; /* Secondary button color */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.logoutButton:hover {
+    background-color: #5a6268; /* Darker shade on hover */
 }
 
 .mainContent {
