@@ -128,9 +128,21 @@
 .pageContainer {
     display: flex;
     flex-direction: column;
-    /* Height calculated based on root layout header */
-    height: calc(100vh - 61px);
-    overflow: hidden; /* Prevent scrollbars from page layout */
+    height: calc(100vh - 61px); /* Assuming 61px header height */
+    overflow: hidden;
+}
+
+/* Update canvasArea to work within a simple flex parent */
+.canvasArea {
+    flex-grow: 1; 
+    height: 100%;
+    position: relative; 
+}
+
+/* Ensure ReactFlow instance fills the canvasArea */
+.reactFlowInstance {
+    height: 100%;
+    width: 100%;
 }
 
 /* Styles for the Undo Notification - now positioned relative to page */
@@ -164,17 +176,6 @@
 /* Minimal container style for error component */
 .container {
     padding: 1.5rem;
-}
-
-.canvasArea {
-    flex-grow: 1; /* Make canvas take remaining space */
-    position: relative; /* Needed if notification is absolute */
-    /* background-color: #f0f0f0; /* Optional background */
-}
-
-.reactFlowInstance {
-    height: 100%;
-    width: 100%;
 }
 
 .errorText {
@@ -279,4 +280,111 @@
 .cancelButton:disabled {
      opacity: 0.65;
      cursor: not-allowed;
+}
+
+/* --- Styles for Sheet Content (Optional - prefer Tailwind) --- */
+/* Example: Add specific styles if Tailwind isn't sufficient */
+
+.sheetContent {
+    /* Add padding or other container styles if needed */
+    /* overflow-y: auto; */ /* SheetContent often handles scrolling */
+}
+
+.infoItem {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem; /* Add some spacing */
+}
+
+.infoItem strong {
+    display: block;
+    color: #6c757d;
+    margin-bottom: 2px;
+    font-weight: 600;
+}
+
+.infoItem span {
+    word-wrap: break-word;
+}
+
+.contentPreview,
+.notesSection,
+.connectionsSection { /* Added connectionsSection */
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid hsl(var(--border));
+}
+
+.contentPreview h4,
+.notesSection h4,
+.connectionsSection h4 { /* Added connectionsSection */
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Specific content display styles if needed */
+.sheetTextContent,
+.sheetLinkContent,
+.sheetJsonContent {
+    font-size: 0.9rem;
+    /* color: #212529; */
+    white-space: pre-wrap; 
+    word-wrap: break-word;
+    background-color: hsl(var(--muted)); /* Use shadcn muted background */
+    padding: 8px 12px;
+    border-radius: var(--radius); /* Use shadcn radius */
+    /* border: 1px solid hsl(var(--border)); */
+    max-height: 150px; /* Limit height for preview */
+    overflow-y: auto;
+}
+
+.sheetJsonContent {
+    font-family: monospace;
+}
+
+.notesSection {
+    /* display: flex; */
+    /* flex-direction: column; */
+}
+
+.notesContent {
+    font-size: 0.9rem;
+    white-space: pre-wrap; 
+    word-wrap: break-word;
+    margin-bottom: 0.75rem;
+    /* background-color: #fff; */ /* Remove specific background */
+    /* padding: 8px; */
+    /* border-radius: 4px; */
+    /* border: 1px solid #e9ecef; */
+}
+
+/* Button is now a shadcn button, styling handled there */
+/* .editNotesButton { ... } */
+
+/* Specific connection styles */
+.connectionsSection h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.connectionList ul {
+    list-style: none;
+    padding-left: 0.5rem; /* Indent slightly */
+    margin: 0;
+}
+
+.connectionList li {
+    font-size: 0.9rem;
+    padding: 2px 0;
+    color: #495057;
+}
+
+.noConnections {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
 } 

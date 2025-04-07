@@ -8,3 +8,5 @@ alwaysApply: true
 
 - focus on maintainability and reability
 - use module base code architecture to easier maintain independent module in the code
+- no magic string
+- no magic number

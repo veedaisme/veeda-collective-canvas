@@ -1,5 +1,19 @@
 # Project Progress
 
+## April 7, 2025 (cont.)
+
+*   **Milestone:** Improved UI with Shadcn Sheet and Bug Fixes.
+    *   Installed shadcn/ui and added `sheet`, `button` components.
+    *   Replaced custom `BlockInfoSidebar` with shadcn `Sheet` component in `CanvasViewPage` for displaying selected block details.
+    *   Updated single-click (`onNodeClick`) and double-click (`onNodeDoubleClick`) handlers to manage Sheet visibility and trigger appropriate actions (show sheet, navigate link, open editor).
+    *   Updated `renderSheetContent` to display incoming/outgoing connection information based on current `edges` and `nodes` state.
+    *   Fixed Supabase RLS policy for deleting connections by adjusting type casting (`fix_rls_delete_connections_join_cast_uid`).
+    *   Fixed `deleteConnectionRecord` in `db.ts` to correctly return `true` on success even if RLS hides the affected row count.
+    *   Fixed `handleEdgesDelete` in `CanvasViewPage` to correctly iterate and call the delete mutation for each selected edge.
+    *   Resolved path alias issues for shadcn/ui imports in Vite/TSConfig.
+    *   Fixed various linter errors (unused variables, type mismatches, property access).
+    *   Ensured connection creation updates the UI immediately by using `setEdges(addEdge(...))` in mutation `onSuccess`.
+
 ## April 7, 2025
 
 *   **Milestone:** Block Notes and Link Block Creation Implemented.

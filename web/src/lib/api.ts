@@ -30,17 +30,29 @@ const makeAuthenticatedRequest = async <T, V extends Variables = Variables>(
 };
 
 // --- Types (Manual for now, consider codegen later) ---
-// Add Block Type
+// Define possible content structures
+export interface TextBlockContent {
+    text: string;
+}
+
+export interface LinkBlockContent {
+    url: string;
+    // Potentially add title, favicon later
+}
+
+// Use a union type for content
+export type BlockContent = TextBlockContent | LinkBlockContent | { [key: string]: unknown } | null; // Allow other potential structures or null
+
 export interface Block {
     id: string;
     canvasId: string;
-    type: string;
-    content: unknown; // JSON - Use unknown instead of any
-    position: { x: number; y: number }; // JSON
-    size: { width: number; height: number }; // JSON
-    createdAt: string; // DateTime
-    updatedAt: string; // DateTime
-    notes?: string | null; // Add notes field
+    type: string; // 'text', 'link', etc.
+    content: BlockContent; // Use the more specific union type
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    createdAt: string;
+    updatedAt: string;
+    notes?: string | null;
 }
 
 export interface Canvas {
@@ -240,7 +252,7 @@ export const createBlock = async (variables: {
     canvasId: string;
     type: string;
     position: { x: number; y: number };
-    content?: unknown; // Use unknown
+    content?: unknown;
 }): Promise<Block> => {
     // Use the authenticated request function
      try {
@@ -273,7 +285,9 @@ export const updateBlockPosition = async (variables: { blockId: string; position
 export const updateBlockContent = async (variables: { blockId: string; content: unknown }): Promise<Pick<Block, 'id' | 'content' | 'updatedAt'> | null> => {
     try {
         // Use the authenticated request function
-        const data = await makeAuthenticatedRequest<{ updateBlockContent: Pick<Block, 'id' | 'content' | 'updatedAt'> }>(
+        const data = await makeAuthenticatedRequest<{
+            updateBlockContent: Pick<Block, 'id' | 'content' | 'updatedAt'>
+        }>(
             UPDATE_BLOCK_CONTENT_MUTATION,
             variables
         );

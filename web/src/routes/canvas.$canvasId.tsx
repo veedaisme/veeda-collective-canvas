@@ -2,30 +2,28 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Edge, // Hooks to manage nodes/edges
-  Node,
-  useEdgesState, // Basic React Flow components
-  useNodesState, // Add addEdge utility
-  type Connection,
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  OnConnect,
-  OnEdgesChange,
-  OnNodesChange,
-  NodeChange,
-  EdgeChange
+    Edge,
+    Node,
+    useEdgesState,
+    useNodesState,
+    type Connection,
+    addEdge,
+    OnConnect,
 } from 'reactflow';
-import 'reactflow/dist/style.css'; // Default styles for react-flow
+import 'reactflow/dist/style.css';
+
+// Shadcn/ui imports
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
 import { NotesEditModal } from '../components/NotesEditModal';
 import { BlockCreationModal } from '../components/BlockCreationModal';
-import { Connection as ApiConnection, Block, Canvas as CanvasBase, CanvasData, createBlock, createConnection, deleteConnection, fetchCanvasById, undoBlockCreation, updateBlockContent, updateBlockPosition, updateCanvasTitle, updateBlockNotes } from '../lib/api';
-import { supabase } from '../lib/supabaseClient'; // Import supabase
-import styles from './canvas.$canvasId.module.css';
+import { Connection as ApiConnection, Block, BlockContent, Canvas as CanvasBase, CanvasData, createBlock, createConnection, deleteConnection, fetchCanvasById, LinkBlockContent, TextBlockContent, undoBlockCreation, updateBlockContent, updateBlockNotes, updateBlockPosition, updateCanvasTitle } from '../lib/api';
+import { supabase } from '../lib/supabaseClient';
 import { isUrl } from '../lib/utils';
+import styles from './canvas.$canvasId.module.css';
 
 // Define an extended Canvas type that includes connections
 // This is temporary until the actual type in api.ts is updated
@@ -33,24 +31,37 @@ type Canvas = CanvasBase & {
   connections?: ApiConnection[];
 };
 
+// Type guard functions for content
+function isTextBlockContent(content: BlockContent | null | undefined): content is TextBlockContent {
+    return !!content && typeof (content as TextBlockContent).text === 'string';
+}
+
+function isLinkBlockContent(content: BlockContent | null | undefined): content is LinkBlockContent {
+    return !!content && typeof (content as LinkBlockContent).url === 'string';
+}
+
 // --- Helper: Map API Block to ReactFlow Node ---
 const mapBlockToNode = (block: Block): Node => {
-    let label = block.type; // Default label is the type
-    if (block.type === 'text' && typeof block.content?.text === 'string') {
+    let label = block.type;
+    let nodeType = 'default';
+
+    // Use type guards
+    if (block.type === 'text' && isTextBlockContent(block.content)) {
         label = block.content.text;
-    } else if (block.type === 'link' && typeof block.content?.url === 'string') {
-        label = block.content.url; // Or fetch title later?
+        nodeType = 'default';
+    } else if (block.type === 'link' && isLinkBlockContent(block.content)) {
+        label = block.content.url;
+        nodeType = 'linkNode';
     }
-    // Add more types as needed
 
     return {
         id: block.id,
-        type: 'default', // Consider custom node types later
+        type: nodeType,
         position: block.position,
         data: {
-            label: label, // Use safely determined label
+            label: label,
             notes: block.notes,
-            rawBlock: block // Include original block data
+            rawBlock: block
         },
     }
 };
@@ -146,18 +157,17 @@ function CanvasViewPage() {
   const [undoBlockId, setUndoBlockId] = useState<string | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
 
-  // Block Content Editing State
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
-  const [editingContent, setEditingContent] = useState<string>("");
-
-  // Block Notes Editing State
+  // Restore needed states
   const [editingNotesBlockId, setEditingNotesBlockId] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<string>("");
-
-  // NEW: Block Creation Input State
   const [isCreatingBlockInput, setIsCreatingBlockInput] = useState<boolean>(false);
-  // Store the intended position for the new block
   const [newBlockPosition, setNewBlockPosition] = useState<{ x: number; y: number }>({ x: 100, y: 100 });
+
+  // NEW: State for selected node for the Sheet
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+
+  // State to control Sheet visibility explicitly (derived from selectedNode)
+  const isSidebarOpen = !!selectedNode;
 
   // Create Block Mutation
   const { mutate: performCreateBlock, isPending: isCreatingBlock } = useMutation({
@@ -235,12 +245,11 @@ function CanvasViewPage() {
   });
 
   // NEW: Mutation for updating block content
-  const { mutate: performUpdateBlockContent, isPending: isUpdatingContent } = useMutation({
+  const { mutate: performUpdateBlockContent } = useMutation({
       mutationFn: updateBlockContent,
       onSuccess: (updatedBlockData, variables) => {
           if (!updatedBlockData) return;
           console.log(`Block ${variables.blockId} content updated`);
-          // Update cache
           queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
               if (!oldData || !oldData.blocks) return oldData;
               return {
@@ -252,13 +261,10 @@ function CanvasViewPage() {
                   ),
               };
           });
-          setEditingBlockId(null); // Exit editing mode
       },
       onError: (err, variables) => {
           console.error(`Error updating content for block ${variables.blockId}:`, err);
           alert(`Failed to save block content for ${variables.blockId}.`);
-          // Optionally reset editing state here or leave input open
-          // setEditingBlockId(null);
       },
   });
 
@@ -271,17 +277,15 @@ function CanvasViewPage() {
     }
 
   // Mutation for updating the Canvas Title
-  const { mutate: performUpdateCanvasTitle, isPending: isUpdatingTitle } = useMutation({
+  const { mutate: performUpdateCanvasTitle } = useMutation({
     mutationFn: updateCanvasTitle,
     onSuccess: (updatedCanvasData, variables) => {
         if (!updatedCanvasData) {
-            // API returned null but didn't throw an error
             console.error("Canvas title update failed - no data returned");
             alert("Failed to update canvas title. The canvas may not exist or you don't have permission.");
             return;
         }
         console.log(`Canvas ${variables.id} title updated`);
-        // Update the canvas title in the query cache
         queryClient.setQueryData<CanvasData>(['canvas', variables.id], (oldData) => {
             if (!oldData) return oldData;
             return { ...oldData, title: updatedCanvasData.title, updatedAt: updatedCanvasData.updatedAt };
@@ -289,20 +293,16 @@ function CanvasViewPage() {
     },
     onError: (err) => {
         console.error("Error updating canvas title:", err);
-        
-        // Handle GraphQL errors specifically
-        const errorObj = err as any;
-        if (errorObj?.response?.errors?.length > 0) {
-            const graphQLError = errorObj.response.errors[0];
-            if (graphQLError.extensions?.code === "NOT_FOUND_OR_FORBIDDEN") {
+        const errorObj = err as { response?: { errors?: { extensions?: { code?: string } }[] } };
+        const errors = errorObj?.response?.errors;
+        if (errors && errors.length > 0) {
+            const graphQLError = errors[0];
+            if (graphQLError?.extensions?.code === "NOT_FOUND_OR_FORBIDDEN") {
                 alert("Cannot update this canvas: either it doesn't exist or you don't have permission to edit it.");
-                // Invalidate query to refresh data
                 queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
                 return;
             }
         }
-        
-        // Generic error message
         alert("Failed to save canvas title. Please try again or refresh the page.");
     },
 });
@@ -323,12 +323,9 @@ function CanvasViewPage() {
 
   // Handler for creating a new block (passed to CanvasHeader)
   const handleCreateNewBlock = () => {
-    // Ideally, calculate position based on current view or last click
-    // For now, use a default or stored position
-    const position = { x: Math.random() * 400, y: Math.random() * 400 }; // Example position
+    const position = { x: Math.random() * 400, y: Math.random() * 400 };
     setNewBlockPosition(position);
     setIsCreatingBlockInput(true);
-    // We no longer call performCreateBlock directly here
   };
 
   // Handler for showing undo notification
@@ -349,190 +346,49 @@ function CanvasViewPage() {
     performUpdateBlockPosition({ blockId: node.id, position: node.position });
   }, [performUpdateBlockPosition]);
 
-  // Handler for the Undo button click
-  const handleUndoClick = () => {
-      if (undoBlockId) {
-          performUndoBlockCreation(undoBlockId);
-      }
-  };
+  // Handler for single click on a node - sets the node to show in the Sheet
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+      console.log('Node Clicked:', node);
+      setSelectedNode(node);
+      // Sheet open state is derived from selectedNode
+  }, []);
 
-  // NEW: Handler for Node Double Click (passed to CanvasWorkspace)
+  // UPDATED: Handler for Node Double Click - also closes Sheet
   const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+      setSelectedNode(null);
       console.log("Node Double Clicked:", node);
-      // Find the original block data using the rawBlock stored in node data
       const blockData = node.data.rawBlock as Block | undefined;
+      if (!blockData) { return; }
 
-      if (!blockData) {
-          console.error("Could not find raw block data in node:", node);
-          return;
-      }
-
-      // Always allow editing notes first?
-      // OR: Edit content for text, notes for others?
-      // Current: Edit content for text, notes for link/other.
-
-      if (blockData.type === 'text') { // If text block, edit content
-        setEditingContent(blockData.content?.text || '');
-        setEditingBlockId(blockData.id);
-      } else { // For *any other* type (including 'link'), edit notes
+      if (blockData.type === 'text' && isTextBlockContent(blockData.content)) {
+          console.log("TODO: Open text edit modal for:", blockData.id);
+      } else if (blockData.type === 'link' && isLinkBlockContent(blockData.content)) {
+          const url = blockData.content.url;
+          let clickableUrl = url;
+          if (!/^https?:\/\//i.test(clickableUrl)) { clickableUrl = `http://${clickableUrl}`; }
+          window.open(clickableUrl, '_blank', 'noopener,noreferrer');
+      } else {
+          console.log("Opening notes editor for block type:", blockData.type);
           setEditingNotes(blockData.notes || '');
           setEditingNotesBlockId(blockData.id);
       }
-  }, []); // No dependency on canvasData.blocks needed now
+  }, []);
 
-  // NEW: Handler for saving edited content
-  const handleContentSave = () => {
-      if (editingBlockId) {
-          const originalBlock = canvasData?.blocks?.find(b => b.id === editingBlockId);
-          const newContent = { text: editingContent }; // Assuming text block structure
-
-          // Avoid saving if content hasn't changed (optional)
-          if (originalBlock && JSON.stringify(originalBlock.content) === JSON.stringify(newContent)) {
-              setEditingBlockId(null);
-              return;
-          }
-
-          performUpdateBlockContent({ blockId: editingBlockId, content: newContent });
+  // Handler for Sheet's onOpenChange (handles closing via X, overlay click, etc.)
+  const handleSheetOpenChange = (open: boolean) => {
+      if (!open) {
+          setSelectedNode(null);
       }
+      // We don't typically set it to open=true here, that's done by handleNodeClick
   };
 
-  // NEW: Handler to cancel editing content
-  const handleContentCancel = () => {
-      setEditingBlockId(null);
-      setEditingContent("");
-  };
-
-  // --- Mutations ---
-
-  // Mutation for Creating Connections
-  const createConnectionMutation = useMutation({
-    mutationFn: createConnection,
-    onSuccess: (newConnectionData) => {
-      if (!newConnectionData) return; // Handle creation failure
-      console.log('Connection created:', newConnectionData);
-      // Update cache - Add edge optimistically or refetch
-      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-        if (!oldData) return oldData;
-        const newEdge: Edge = {
-          id: newConnectionData.id,
-          source: newConnectionData.sourceBlockId,
-          target: newConnectionData.targetBlockId,
-          sourceHandle: newConnectionData.sourceHandle,
-          targetHandle: newConnectionData.targetHandle,
-        };
-        return {
-          ...oldData,
-          connections: [...(oldData.connections || []), newConnectionData],
-        };
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to create connection:", error);
-      // TODO: Show user notification
-    },
-  });
-
-  // Mutation for Deleting Connections
-  const deleteConnectionMutation = useMutation({
-    mutationFn: deleteConnection,
-    // When deleting, we only get success boolean, need the ID passed in
-    onSuccess: (success, variables) => {
-      if (!success) return;
-      console.log('Connection deleted:', variables.connectionId);
-      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          connections: (oldData.connections || []).filter((conn: ApiConnection) => conn.id !== variables.connectionId),
-        };
-      });
-    },
-    onError: (error, variables) => {
-      console.error(`Failed to delete connection ${variables.connectionId}:`, error);
-      // TODO: Show user notification
-    },
-  });
-
-  // --- Handlers ---
-
-  // Handler for Creating Connections (from ReactFlow)
-  const handleConnect = useCallback((connection: Connection | Edge) => {
-    console.log('Attempting to connect:', connection);
-    // Check if essential fields are present (ReactFlow might provide partial data sometimes)
-    if (!connection.source || !connection.target || !canvasId) {
-      console.warn("Connection attempt missing required data", connection);
-      return;
-    }
-    createConnectionMutation.mutate({
-      canvasId: canvasId!,
-      sourceBlockId: connection.source,
-      targetBlockId: connection.target,
-      sourceHandle: connection.sourceHandle,
-      targetHandle: connection.targetHandle,
-    });
-  }, [canvasId, createConnectionMutation]); // Add dependencies
-
-  // Handler for Deleting Edges (from ReactFlow)
-  const handleEdgesDelete = useCallback((deletedEdges: Edge[]) => {
-    console.log('Attempting to delete edges:', deletedEdges);
-    deletedEdges.forEach(edge => {
-      deleteConnectionMutation.mutate({ connectionId: edge.id });
-    });
-  }, [deleteConnectionMutation]); // Add dependency
-
-  // Add handler for node deletion if needed
-  const handleNodesDelete = useCallback((deletedNodes: Node[]) => {
-      console.log('Nodes delete requested (implement if needed):', deletedNodes);
-      // Add logic here to delete corresponding blocks via API mutation
-      // e.g., deletedNodes.forEach(node => performDeleteBlock(node.id));
-  }, []); // Add dependencies if needed
-
-  // NEW: Handler for saving from the BlockCreationModal
-  const handleBlockCreationSave = (inputValue: string) => {
-      const trimmedInput = inputValue.trim();
-      if (!trimmedInput) {
-          setIsCreatingBlockInput(false); // Just close if empty
-          return;
-      }
-
-      let blockType: 'text' | 'link' = 'text';
-      let blockContent: any = { text: trimmedInput };
-
-      if (isUrl(trimmedInput)) {
-          console.log("[Block Creation] Detected URL:", trimmedInput);
-          blockType = 'link';
-          // Simple content structure for link block
-          blockContent = { url: trimmedInput };
-      } else {
-          console.log("[Block Creation] Detected Text:", trimmedInput);
-          blockType = 'text';
-          blockContent = { text: trimmedInput };
-      }
-
-      console.log(`[Page] Creating new block (${blockType}) on canvas ${canvasId}`);
-      performCreateBlock({
-          canvasId: canvasId,
-          type: blockType,
-          position: newBlockPosition,
-          content: blockContent,
-      });
-
-      setIsCreatingBlockInput(false); // Close modal after initiating save
-  };
-
-  // NEW: Handler for canceling the BlockCreationModal
-  const handleBlockCreationCancel = () => {
-      setIsCreatingBlockInput(false);
-  };
-
-  // NEW: Mutation for updating block notes
+  // Restore notes update mutation and get isPending flag
   const { mutate: performUpdateBlockNotes, isPending: isUpdatingNotes } = useMutation({
       mutationFn: updateBlockNotes,
       onSuccess: (updatedBlockData, variables) => {
           if (!updatedBlockData) return;
           console.log(`Block ${variables.blockId} notes updated`);
-          // Update cache
-          queryClient.setQueryData<CanvasData>(['canvas', canvasId], (oldData) => { // Use CanvasData
+          queryClient.setQueryData<CanvasData>(['canvas', canvasId], (oldData) => {
               if (!oldData || !oldData.blocks) return oldData;
               return {
                   ...oldData,
@@ -543,7 +399,7 @@ function CanvasViewPage() {
                   ),
               };
           });
-          setEditingNotesBlockId(null); // Exit editing mode
+          setEditingNotesBlockId(null);
       },
       onError: (err, variables) => {
           console.error(`Error updating notes for block ${variables.blockId}:`, err);
@@ -551,21 +407,242 @@ function CanvasViewPage() {
       },
   });
 
-  // Handle saving edited notes (Passed to NotesEditModal as onSave)
+  // Restore connection mutations and handlers
+  const createConnectionMutation = useMutation({
+      mutationFn: createConnection,
+      onSuccess: (newConnectionData) => {
+          if (!newConnectionData) return;
+          console.log('Connection created:', newConnectionData);
+          
+          // Option 1: Cache Update (Keep for data consistency, but don't rely on for UI)
+          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+              if (!oldData) return oldData;
+              return {
+                  ...oldData,
+                  connections: [...(oldData.connections || []), newConnectionData],
+              };
+          });
+
+          // Option 2: Direct State Update (Use this for immediate UI feedback)
+          const newEdge = mapConnectionToEdge(newConnectionData);
+          setEdges((eds) => addEdge(newEdge, eds));
+      },
+      onError: (error) => {
+          console.error("Failed to create connection:", error);
+          // If using optimistic updates with Option 2, revert here:
+          // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] }); // Or remove edge from state
+      },
+  });
+
+  const deleteConnectionMutation = useMutation({
+      mutationFn: deleteConnection,
+      onSuccess: (success, variables) => {
+          if (!success) return;
+          console.log('Connection deleted:', variables.connectionId);
+          // Update cache (should trigger useEffect for edges state)
+          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
+              if (!oldData) return oldData;
+              return {
+                  ...oldData,
+                  connections: (oldData.connections || []).filter((conn: ApiConnection) => conn.id !== variables.connectionId),
+              };
+          });
+      },
+      onError: (error, variables) => {
+          console.error(`Failed to delete connection ${variables.connectionId}:`, error);
+      },
+  });
+
+  // Fix handleConnect signature and logic
+  const handleConnect = useCallback((connection: Connection | Edge) => {
+      console.log('Attempting to connect:', connection);
+      if (!connection.source || !connection.target || !canvasId) {
+          console.warn("Connection attempt missing required data", connection);
+          return;
+      }
+      // Handles can be undefined on Edge type, default to null for API
+      const sourceHandle = 'sourceHandle' in connection ? connection.sourceHandle : null;
+      const targetHandle = 'targetHandle' in connection ? connection.targetHandle : null;
+
+      createConnectionMutation.mutate({
+          canvasId: canvasId!,
+          sourceBlockId: connection.source,
+          targetBlockId: connection.target,
+          sourceHandle: sourceHandle,
+          targetHandle: targetHandle,
+      });
+  }, [canvasId, createConnectionMutation]);
+
+  // Restore block creation modal handlers
+  const handleBlockCreationSave = (inputValue: string) => {
+      const trimmedInput = inputValue.trim();
+      if (!trimmedInput) { setIsCreatingBlockInput(false); return; }
+      let blockType: 'text' | 'link' = 'text';
+      let blockContent: unknown = { text: trimmedInput };
+      if (isUrl(trimmedInput)) {
+          blockType = 'link';
+          blockContent = { url: trimmedInput };
+      }
+      performCreateBlock({ canvasId, type: blockType, position: newBlockPosition, content: blockContent });
+      setIsCreatingBlockInput(false);
+  };
+  const handleBlockCreationCancel = () => { setIsCreatingBlockInput(false); };
+
+  // Restore notes update mutation and handlers
   const handleNotesSave = (newNotes: string) => {
       if (editingNotesBlockId === null) return;
-      performUpdateBlockNotes({
-          blockId: editingNotesBlockId,
-          notes: newNotes,
-      });
-      // Modal is closed in onSuccess now
+      performUpdateBlockNotes({ blockId: editingNotesBlockId, notes: newNotes });
   };
+  const handleNotesCancel = () => { setEditingNotesBlockId(null); setEditingNotes(""); };
 
-  // Handle canceling notes edit (Passed to NotesEditModal as onCancel)
-  const handleNotesCancel = () => {
-      setEditingNotesBlockId(null);
-      setEditingNotes(""); // Clear potentially edited notes
-  };
+  const handleEditNotesFromSidebar = useCallback((blockId: string) => {
+      const node = nodes.find(n => n.id === blockId); // Find the node first
+      // Access data.rawBlock on the *found node*
+      const currentNotes = node?.data?.rawBlock?.notes || ''; 
+      setSelectedNode(null);
+      setEditingNotes(currentNotes);
+      setEditingNotesBlockId(blockId);
+  }, [nodes]); // Add nodes dependency
+
+  // REINSTATE handleEdgesDelete
+  const handleEdgesDelete = useCallback((deletedEdges: Edge[]) => {
+      console.log('Attempting to delete edges:', deletedEdges);
+      // Iterate and call mutate for each edge
+      deletedEdges.forEach(edge => {
+          deleteConnectionMutation.mutate({ connectionId: edge.id });
+      });
+  }, [deleteConnectionMutation]);
+
+  // Helper function to render sheet content safely
+  const renderSheetContent = () => {
+      if (!selectedNode) return null;
+      const blockData = selectedNode.data.rawBlock as Block | undefined;
+      if (!blockData) return <p>Error loading block data.</p>;
+
+      const relatedEdges = edges.filter(edge => 
+          edge.source === selectedNode.id || edge.target === selectedNode.id
+      );
+
+      const incomingConnections = relatedEdges
+          .filter(edge => edge.target === selectedNode.id)
+          .map(edge => {
+              const sourceNode = nodes.find(n => n.id === edge.source); // Find the node
+              return {
+                  id: edge.id,
+                  connectedNodeId: edge.source,
+                  // Access data.label on the *found node*
+                  connectedNodeLabel: sourceNode?.data?.label ?? edge.source 
+              };
+          });
+
+      const outgoingConnections = relatedEdges
+          .filter(edge => edge.source === selectedNode.id)
+          .map(edge => {
+              const targetNode = nodes.find(n => n.id === edge.target); // Find the node
+              return {
+                  id: edge.id,
+                  connectedNodeId: edge.target,
+                  // Access data.label on the *found node*
+                  connectedNodeLabel: targetNode?.data?.label ?? edge.target 
+              };
+          });
+
+      const displayContent = () => {
+        if (!blockData.content) return '(empty)';
+        if (isTextBlockContent(blockData.content)) {
+            return <p className={styles.sheetTextContent}>{blockData.content.text}</p>;
+        }
+        if (isLinkBlockContent(blockData.content)) {
+            return <p className={styles.sheetLinkContent}>{blockData.content.url}</p>;
+        }
+        try {
+            return <pre className={styles.sheetJsonContent}>{JSON.stringify(blockData.content, null, 2)}</pre>;
+        } catch (_e) {
+            return '(Cannot display content)';
+        }
+      };
+
+      return (
+          <>
+              <SheetHeader>
+                  <SheetTitle>Block Info</SheetTitle>
+                  {/* Optional: Add description or more header info */}
+                  {/* <SheetDescription>Details for the selected block.</SheetDescription> */}
+              </SheetHeader>
+              <div className="py-4 space-y-4 overflow-y-auto"> {/* Allow vertical scroll */} 
+                  <div className={styles.infoItem}>
+                      <strong>ID:</strong> <span>{blockData.id}</span>
+                  </div>
+                  <div className={styles.infoItem}>
+                      <strong>Type:</strong> <span>{blockData.type}</span>
+                  </div>
+                  <div className={styles.infoItem}>
+                      <strong>Created At:</strong>
+                      <span>{new Date(blockData.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className={styles.infoItem}>
+                      <strong>Updated At:</strong>
+                      <span>{new Date(blockData.updatedAt).toLocaleString()}</span>
+                  </div>
+                  
+                  <div className={styles.contentPreview}>
+                      <h4>Content:</h4>
+                      {displayContent()} 
+                  </div>
+
+                  {/* Connections Section */}
+                  <div className={styles.connectionsSection}>
+                      <h4>Connections</h4>
+                      {relatedEdges.length === 0 ? (
+                          <p className={styles.noConnections}>No connections.</p>
+                      ) : (
+                          <div className={styles.connectionList}>
+                              {incomingConnections.length > 0 && (
+                                  <div>
+                                      <h5>Incoming:</h5>
+                                      <ul>
+                                          {incomingConnections.map(conn => (
+                                              <li key={conn.id}>From: {conn.connectedNodeLabel}</li>
+                                          ))}
+                                      </ul>
+                                  </div>
+                              )}
+                              {outgoingConnections.length > 0 && (
+                                  <div>
+                                      <h5>Outgoing:</h5>
+                                      <ul>
+                                          {outgoingConnections.map(conn => (
+                                              <li key={conn.id}>To: {conn.connectedNodeLabel}</li>
+                                          ))}
+                                      </ul>
+                                  </div>
+                              )}
+                          </div>
+                      )}
+                  </div>
+
+                  <div className={styles.notesSection}>
+                      <h4>Notes / Reflections:</h4>
+                      <p className={styles.notesContent}>{blockData.notes || '(No notes yet)'}</p>
+                      <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditNotesFromSidebar(blockData.id)}
+                      >
+                          Edit Notes
+                      </Button>
+                  </div>
+                  {/* Add Connections Later */} 
+              </div>
+              {/* Optional Footer */}
+              {/* <SheetFooter>
+                  <SheetClose asChild>
+                      <Button variant="outline">Close</Button>
+                  </SheetClose>
+              </SheetFooter> */}
+          </>
+      );
+  }
 
   // Handle loading and error states from useQuery
   if (isCanvasLoading && !canvasData) { // Check if loading initial data (canvasData is undefined)
@@ -589,77 +666,48 @@ function CanvasViewPage() {
         onCreateBlock={handleCreateNewBlock}
         isCreatingBlock={isCreatingBlock}
       />
-      <CanvasWorkspace
-        key={canvasId}
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        canvasTitle={canvasData.title}
-        onSaveTitle={handleTitleSave}
-        onNodeDragStop={handleNodeDragStop}
-        onNodeDoubleClick={handleNodeDoubleClick}
-        onConnect={handleConnect}
-        onEdgesDelete={handleEdgesDelete}
-      />
-       {/* Undo Notification */} 
-       {undoBlockId && (
-          <div className={styles.undoNotification}>
-              <span>Block created.</span>
-              <button onClick={handleUndoClick}>Undo</button>
-          </div>
+      <div className="flex flex-grow overflow-hidden"> {/* Simple flex wrapper */} 
+        <CanvasWorkspace
+            key={canvasId}
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            canvasTitle={canvasData.title}
+            onSaveTitle={handleTitleSave}
+            onNodeDragStop={handleNodeDragStop}
+            onNodeClick={handleNodeClick} // Pass single click handler
+            onNodeDoubleClick={handleNodeDoubleClick} // Pass double click handler
+            onConnect={handleConnect}
+            onEdgesDelete={handleEdgesDelete} // Pass the handler function
+            // Add className for Tailwind layout if needed
+            // className="flex-grow h-full" 
+        />
+      </div>
+
+      {/* Render Sheet */} 
+      <Sheet open={isSidebarOpen} onOpenChange={handleSheetOpenChange}>
+          <SheetContent className={styles.sheetContent}> {/* Add custom class if needed */} 
+              {renderSheetContent()}
+          </SheetContent>
+      </Sheet>
+
+       {/* Render needed modals */}
+       {editingNotesBlockId && (
+           <NotesEditModal
+               initialNotes={editingNotes}
+               onSave={handleNotesSave}
+               onCancel={handleNotesCancel}
+               isSaving={isUpdatingNotes}
+           />
        )}
-
-       {/* NEW: Modal or Overlay for Editing Block Content */} 
-       {editingBlockId && (
-          <div className={styles.editOverlay}>
-              <div className={styles.editModal}>
-                  <h3>Edit Block Content (ID: {editingBlockId})</h3>
-                  {/* Simple textarea for text blocks */} 
-                  <textarea
-                      value={editingContent}
-                      onChange={(e) => setEditingContent(e.target.value)}
-                      rows={5}
-                      className={styles.editTextarea}
-                      autoFocus
-                  />
-                  <div className={styles.editActions}>
-                      <button onClick={handleContentCancel} disabled={isUpdatingContent} className={styles.cancelButton}>
-                          Cancel
-                      </button>
-                      <button onClick={handleContentSave} disabled={isUpdatingContent} className={styles.saveButton}>
-                          {isUpdatingContent ? 'Saving...' : 'Save Content'}
-                      </button>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* Block Notes Edit Modal - Fix Props */}
-      {editingNotesBlockId && (
-          <NotesEditModal
-              // Pass props matching the component definition
-              initialNotes={editingNotes} // Pass current notes state
-              onSave={handleNotesSave} // Pass save handler
-              onCancel={handleNotesCancel} // Pass cancel handler
-              isSaving={isUpdatingNotes} // Pass mutation pending state
-              // Remove incorrect props
-              // blockId={editingNotesBlockId}
-              // notes={editingNotes}
-              // onNotesChange={(newNotes: string) => setEditingNotes(newNotes)} // State is managed internally by modal, save on submit
-              // onClose={() => setEditingNotesBlockId(null)}
-          />
-      )}
-
-      {/* NEW: Block Creation Modal */}
-      {isCreatingBlockInput && (
-          <BlockCreationModal
-              onSave={handleBlockCreationSave}
-              onCancel={handleBlockCreationCancel}
-              isSaving={isCreatingBlock} // Use the same pending flag
-          />
-      )}
-
+       {isCreatingBlockInput && (
+           <BlockCreationModal
+               onSave={handleBlockCreationSave}
+               onCancel={handleBlockCreationCancel}
+               isSaving={isCreatingBlock}
+           />
+       )}
     </div>
   );
 }
@@ -675,4 +723,5 @@ function CanvasErrorComponent({ error }: { error: Error }) {
     );
 }
 
-const UNDO_GRACE_PERIOD_MS = 30 * 1000; // Define constant used in component 
+// Restore constant if needed by showUndoNotification
+// const UNDO_GRACE_PERIOD_MS = 30 * 1000; 

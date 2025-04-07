@@ -14,8 +14,15 @@ import 'reactflow/dist/style.css';
 import { useMutation } from '@tanstack/react-query';
 import { undoBlockCreation, Block } from '../lib/api';
 import styles from './CanvasWorkspace.module.css';
+import LinkNode from './LinkNode';
 
 const UNDO_GRACE_PERIOD_MS = 30 * 1000;
+
+// Define the node types object
+const nodeTypes = {
+    linkNode: LinkNode,
+    // Add other custom node types here if needed
+};
 
 // --- Helper: Map API Block to ReactFlow Node ---
 const mapBlockToNode = (block: Block): Node => ({
@@ -36,6 +43,7 @@ interface CanvasWorkspaceProps {
     canvasTitle: string;
     onSaveTitle: (newTitle: string) => void;
     onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
+    onNodeClick?: (event: React.MouseEvent, node: Node) => void;
     onNodeDoubleClick?: (event: React.MouseEvent, node: Node) => void;
     onConnect: (connection: Connection | Edge) => void;
     onEdgesDelete: (deletedEdges: Edge[]) => void;
@@ -50,6 +58,7 @@ export function CanvasWorkspace({
     canvasTitle,
     onSaveTitle,
     onNodeDragStop,
+    onNodeClick,
     onNodeDoubleClick,
     onConnect,
     onEdgesDelete
@@ -111,12 +120,14 @@ export function CanvasWorkspace({
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onNodeDragStop={onNodeDragStop}
+                onNodeClick={onNodeClick}
                 onNodeDoubleClick={onNodeDoubleClick}
                 onConnect={handleConnect}
                 onEdgesDelete={onEdgesDelete}
                 fitView
                 fitViewOptions={fitViewOptions}
                 className={styles.reactFlowInstance}
+                nodeTypes={nodeTypes}
             >
                 <Controls />
                 <MiniMap nodeStrokeWidth={3} zoomable pannable />
