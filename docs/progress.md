@@ -97,9 +97,20 @@
     *   Ensured data operations correctly use user-specific Supabase client via context to respect RLS.
     *   Fixed issues related to updating canvas titles and creating blocks due to incorrect client usage or schema mismatches (using `PositionInput`, standard `JSON` scalar).
 
+## April 8, 2025
+
+*   **Milestone:** Refined Block Node UI with `StyledBlockNode`.
+    *   Created `StyledBlockNode` component using shadcn `Card` for a consistent UI.
+    *   Implemented logic to display block `type` in the header, main `content` (text, link, or fallback), and optional `notes` as a footnote.
+    *   Added CSS module (`StyledBlockNode.module.css`) and iteratively refined styling (padding, borders, font sizes, max-height, overflow) for better layout and readability based on visual feedback.
+    *   Replaced the previous `LinkNode` with `StyledBlockNode` in `CanvasWorkspace`, updating `nodeTypes` and `mapBlockToNode`.
+    *   Removed the unused `LinkNode` component and its styles.
+
 *   **Next Steps:**
     *   Implement double-click on canvas background to trigger block creation modal at that position.
+    *   Implement double-click on link-type blocks to open the URL in a new tab.
     *   Implement link preview (fetch title/favicon) for link blocks, potentially using a backend function.
+    *   Add capability to update block notes from the sidebar/sheet.
     *   Refine UI/UX (e.g., styling consistency, loading/error states).
     *   Implement Image Blocks (BM-3).
     *   Implement basic Sharing features (SV-1, SV-2, SV-3).
