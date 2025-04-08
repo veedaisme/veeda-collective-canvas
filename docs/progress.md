@@ -107,7 +107,6 @@
     *   Removed the unused `LinkNode` component and its styles.
 
 *   **Next Steps:**
-    *   Implement double-click on canvas background to trigger block creation modal at that position.
     *   Implement double-click on link-type blocks to open the URL in a new tab.
     *   Implement link preview (fetch title/favicon) for link blocks, potentially using a backend function.
     *   Add capability to update block notes from the sidebar/sheet.
@@ -115,3 +114,10 @@
     *   Implement Image Blocks (BM-3).
     *   Implement basic Sharing features (SV-1, SV-2, SV-3).
     *   Re-enable/refactor text block content editing.
+
+## April 8, 2025 (cont.)
+
+*   **Milestone:** Canvas Background Double-Click Block Creation.
+    *   Implemented double-click on empty canvas background to open the block creation modal.
+    *   New block is created precisely at the double-clicked position.
+    *   Disabled default React Flow zoom on double-click to enable this feature.

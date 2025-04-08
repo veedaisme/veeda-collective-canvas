@@ -330,6 +330,13 @@ function CanvasViewPage() {
     setIsCreatingBlockInput(true);
   };
 
+  // Handler for background double-click - creates a block at the clicked position
+  const handleBackgroundDoubleClick = useCallback((position: { x: number, y: number }) => {
+    console.log('Background Double Clicked at position:', position);
+    setNewBlockPosition(position);
+    setIsCreatingBlockInput(true);
+  }, []);
+
   // Handler for showing undo notification
   const showUndoNotification = useCallback((blockId: string) => {
       console.log("[Page] Showing undo for", blockId);
@@ -528,24 +535,28 @@ function CanvasViewPage() {
       const incomingConnections = relatedEdges
           .filter(edge => edge.target === selectedNode.id)
           .map(edge => {
-              const sourceNode = nodes.find(n => n.id === edge.source); // Find the node
+              // Find the source node and safely access its label
+              const sourceNode = nodes.find(n => n.id === edge.source);
+              const sourceLabel = sourceNode && sourceNode.data ? sourceNode.data.label : edge.source;
+              
               return {
                   id: edge.id,
                   connectedNodeId: edge.source,
-                  // Access data.label on the *found node*
-                  connectedNodeLabel: sourceNode?.data?.label ?? edge.source 
+                  connectedNodeLabel: sourceLabel
               };
           });
 
       const outgoingConnections = relatedEdges
           .filter(edge => edge.source === selectedNode.id)
           .map(edge => {
-              const targetNode = nodes.find(n => n.id === edge.target); // Find the node
+              // Find the target node and safely access its label
+              const targetNode = nodes.find(n => n.id === edge.target);
+              const targetLabel = targetNode && targetNode.data ? targetNode.data.label : edge.target;
+              
               return {
                   id: edge.id,
                   connectedNodeId: edge.target,
-                  // Access data.label on the *found node*
-                  connectedNodeLabel: targetNode?.data?.label ?? edge.target 
+                  connectedNodeLabel: targetLabel
               };
           });
 
@@ -682,6 +693,7 @@ function CanvasViewPage() {
             onNodeDoubleClick={handleNodeDoubleClick} // Pass double click handler
             onConnect={handleConnect}
             onEdgesDelete={handleEdgesDelete} // Pass the handler function
+            onBackgroundDoubleClick={handleBackgroundDoubleClick} // Pass background double-click handler
             // Add className for Tailwind layout if needed
             // className="flex-grow h-full" 
         />
@@ -726,4 +738,4 @@ function CanvasErrorComponent({ error }: { error: Error }) {
 }
 
 // Restore constant if needed by showUndoNotification
-// const UNDO_GRACE_PERIOD_MS = 30 * 1000; 
+// const UNDO_GRACE_PERIOD_MS = 30 * 1000;
