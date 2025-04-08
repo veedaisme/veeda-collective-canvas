@@ -130,3 +130,17 @@
     *   Handled loading and error states gracefully within the preview area.
     *   Styled the preview for visual clarity and hover feedback, consistent with existing UI.
     *   This replaces the previous plan to open the URL on double-click, providing a more intuitive and discoverable interaction.
+
+*   **Milestone:** Enhanced Inline Link Preview Functionality
+    *   Improved metadata extraction by parsing Open Graph tags and Twitter oEmbed API for richer previews.
+    *   Implemented special handling for Twitter links to fetch tweet info via oEmbed.
+    *   Simplified preview UI by removing redundant title/domain when content already shows the URL.
+    *   Error messages for failed previews now auto-dismiss after 3 seconds and appear less prominently.
+    *   Link preview container is only rendered when loading, error, or metadata exists, reducing empty space.
+    *   Adjusted styling for a cleaner, more proportional block layout.
+
+*   **Milestone:** Optimized Block Dragging to Reduce Unnecessary Backend Updates
+    *   Implemented drag start position tracking to detect significant block movements.
+    *   Backend update for block position now only triggers if the block was moved beyond a minimal threshold.
+    *   Updated `CanvasWorkspace` to forward `onNodeDragStart` to React Flow.
+    *   This reduces redundant network calls and improves performance during block interactions.

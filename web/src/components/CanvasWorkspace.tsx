@@ -57,6 +57,7 @@ interface CanvasWorkspaceProps {
     onEdgesChange: OnEdgesChange;
     canvasTitle: string;
     onSaveTitle: (newTitle: string) => void;
+    onNodeDragStart?: (event: React.MouseEvent, node: Node) => void;
     onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
     onNodeClick?: (event: React.MouseEvent, node: Node) => void;
     onNodeDoubleClick?: (event: React.MouseEvent, node: Node) => void;
@@ -73,6 +74,7 @@ export function CanvasWorkspace({
     onEdgesChange,
     canvasTitle,
     onSaveTitle,
+    onNodeDragStart,
     onNodeDragStop,
     onNodeClick,
     onNodeDoubleClick,
@@ -156,6 +158,7 @@ export function CanvasWorkspace({
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
+                onNodeDragStart={onNodeDragStart}
                 onNodeDragStop={onNodeDragStop}
                 onNodeClick={onNodeClick}
                 onNodeDoubleClick={onNodeDoubleClick}

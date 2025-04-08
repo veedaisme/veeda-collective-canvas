@@ -348,10 +348,25 @@ function CanvasViewPage() {
       setUndoTimeoutId(timeoutId);
   }, [undoTimeoutId]);
 
-  // Handler for node changes from CanvasWorkspace (e.g., drag stop)
+  const dragStartPositionsRef = React.useRef<Map<string, { x: number; y: number }>>(new Map());
+
+  const handleNodeDragStart = useCallback((_event: React.MouseEvent, node: Node) => {
+    dragStartPositionsRef.current.set(node.id, { ...node.position });
+  }, []);
+
   const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
-    console.log('Node Drag Stop:', node.id, node.position);
-    // Call the mutation to save the new position
+    const startPos = dragStartPositionsRef.current.get(node.id);
+    if (!startPos) {
+      performUpdateBlockPosition({ blockId: node.id, position: node.position });
+      return;
+    }
+    const dx = Math.abs(node.position.x - startPos.x);
+    const dy = Math.abs(node.position.y - startPos.y);
+    const threshold = 1;
+    if (dx < threshold && dy < threshold) {
+      console.log(`Skip update for ${node.id}, movement too small (${dx}, ${dy})`);
+      return;
+    }
     performUpdateBlockPosition({ blockId: node.id, position: node.position });
   }, [performUpdateBlockPosition]);
 
@@ -688,6 +703,7 @@ function CanvasViewPage() {
             onEdgesChange={onEdgesChange}
             canvasTitle={canvasData.title}
             onSaveTitle={handleTitleSave}
+            onNodeDragStart={handleNodeDragStart}
             onNodeDragStop={handleNodeDragStop}
             onNodeClick={handleNodeClick} // Pass single click handler
             onNodeDoubleClick={handleNodeDoubleClick} // Pass double click handler
