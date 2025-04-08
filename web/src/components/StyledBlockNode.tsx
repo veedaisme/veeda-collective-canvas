@@ -162,7 +162,7 @@ const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }
                 {displayContent}
 
                 {/* Link preview for link blocks */}
-                {type === 'link' && isLinkBlockContent(content) && content.url && (
+                {type === 'link' && isLinkBlockContent(content) && content.url && (loading || error || linkMeta) && (
                     <div className={styles.linkPreview}>
                         {loading && <p>Loading preview...</p>}
                         {error && <p className={styles.previewError}>{error}</p>}
