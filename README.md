@@ -4,7 +4,7 @@ A collaborative canvas application built with Deno, React, GraphQL, and Supabase
 
 ## Overview
 
-This project aims to provide a real-time collaborative space where users can create and interact with content blocks on a shared canvas. It features a modern tech stack focused on TypeScript, developer experience, and leveraging Supabase for backend services.
+This project aims to provide a real-time collaborative space where users can create and interact with content blocks on a shared canvas. Inspired by Are.na, it combines channel-based organization with a flexible canvas interface for easier knowledge management and discovery. It features a modern tech stack focused on TypeScript, developer experience, and leveraging Supabase for backend services.
 
 ## Tech Stack
 
