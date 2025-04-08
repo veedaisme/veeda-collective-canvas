@@ -1,755 +1,269 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    Edge,
-    Node,
-    useEdgesState,
-    useNodesState,
-    type Connection,
-    addEdge,
-    OnConnect,
-} from 'reactflow';
+import React, { useCallback } from 'react';
+import { Node, useReactFlow } from 'reactflow'; // Import useReactFlow
 import 'reactflow/dist/style.css';
 
-// Shadcn/ui imports
+// UI Components
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-
 import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
 import { NotesEditModal } from '../components/NotesEditModal';
 import { BlockCreationModal } from '../components/BlockCreationModal';
-import { Connection as ApiConnection, Block, BlockContent, Canvas as CanvasBase, CanvasData, createBlock, createConnection, deleteConnection, fetchCanvasById, LinkBlockContent, TextBlockContent, undoBlockCreation, updateBlockContent, updateBlockNotes, updateBlockPosition, updateCanvasTitle } from '../lib/api';
+
+// API, Utils, Constants, Hooks
+import { Block, CanvasData } from '../lib/api';
 import { supabase } from '../lib/supabaseClient';
 import { isUrl } from '../lib/utils';
+import { isLinkBlockContent, isTextBlockContent } from '../lib/canvasUtils';
 import styles from './canvas.$canvasId.module.css';
-
-// Define an extended Canvas type that includes connections
-// This is temporary until the actual type in api.ts is updated
-type Canvas = CanvasBase & {
-  connections?: ApiConnection[];
-};
-
-// Type guard functions for content
-function isTextBlockContent(content: BlockContent | null | undefined): content is TextBlockContent {
-    return !!content && typeof (content as TextBlockContent).text === 'string';
-}
-
-function isLinkBlockContent(content: BlockContent | null | undefined): content is LinkBlockContent {
-    return !!content && typeof (content as LinkBlockContent).url === 'string';
-}
-
-// --- Helper: Map API Block to ReactFlow Node ---
-const mapBlockToNode = (block: Block): Node => {
-    // Determine label based on type and content
-    let label = block.type; // Default label is the type
-    if (isTextBlockContent(block.content)) {
-        label = block.content.text;
-    } else if (isLinkBlockContent(block.content)) {
-        label = block.content.url;
-    }
-
-    let nodeType = 'styledBlockNode';
-    if (block.type === 'text') nodeType = 'textBlockNode';
-    else if (block.type === 'link') nodeType = 'linkBlockNode';
-
-    return {
-        id: block.id,
-        type: nodeType,
-        position: block.position,
-        data: {
-            label,
-            notes: block.notes,
-            rawBlock: block,
-        },
-    }
-};
-
-// --- Helper: Map API Connection to ReactFlow Edge ---
-const mapConnectionToEdge = (conn: ApiConnection): Edge => ({
-    id: conn.id,
-    source: conn.sourceBlockId,
-    target: conn.targetBlockId,
-    sourceHandle: conn.sourceHandle,
-    targetHandle: conn.targetHandle,
-    // Add other properties like type, animated if needed
-});
+import { useCanvasData } from '../hooks/useCanvasData';
+import { useReactFlowState } from '../hooks/useReactFlowState';
+import { useCanvasUIState } from '../hooks/useCanvasUIState';
+import { useCanvasMutations } from '../hooks/useCanvasMutations';
+import { useCanvasInteractionHandlers } from '../hooks/useCanvasInteractionHandlers';
 
 // --- Route Definition ---
-// Loader function to fetch data before the component renders
-// REMOVED from here, now handled in beforeLoad and TanStack Query's useQuery
-/*
-const loader = async ({ params }: { params: { canvasId: string } }) => {
-  console.log(`[Loader] Fetching canvas ${params.canvasId}`);
-  const canvas = await fetchCanvasById(params.canvasId);
-  if (!canvas) {
-    throw new Error('Canvas not found');
-  }
-  return canvas;
-};
-*/
-
 export const Route = createFileRoute('/canvas/$canvasId')({
   beforeLoad: async ({ location, params }) => {
-    // Check Supabase auth status directly
     const { data: { session } } = await supabase.auth.getSession();
-
-    // If no session, redirect to login
     if (!session) {
       throw redirect({
         to: '/login',
-        search: {
-          redirect: location.href,
-        },
+        search: { redirect: location.href },
       });
     }
-
-    // --- Prefetching Removed ---
-    // Data fetching will be handled by useQuery within the component.
     console.log(`[beforeLoad] User authenticated for canvas ${params.canvasId}. Proceeding to load component.`);
-
-    // If logged in, allow loading
   },
   component: CanvasViewPage,
-  // loader: loader, // Loader removed, data fetching handled by useQuery initialized with prefetch
-  errorComponent: CanvasErrorComponent, // Still useful for errors *within* the component render
-})
-
-// --- Page Component ---
-
-function CanvasViewPage() {
-  const { canvasId } = Route.useParams();
-  const queryClient = useQueryClient();
-
-  // Fetch canvas data using useQuery
-  const { data: canvasData, isLoading: isCanvasLoading, error: canvasError } = useQuery<CanvasData | null>({
-      queryKey: ['canvas', canvasId],
-      queryFn: () => fetchCanvasById(canvasId),
-      staleTime: 5 * 60 * 1000,
-  });
-
-  // Map API Connections to ReactFlow Edges
-  const initialEdges = useMemo(() => {
-      if (!canvasData?.connections) return [];
-      return canvasData.connections.map(mapConnectionToEdge);
-  }, [canvasData?.connections]);
-
-  // Initialize with empty arrays, then populate via useEffect
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
-
-  // Effect to update React Flow state when canvasData is fetched/changed
-  useEffect(() => {
-      if (canvasData) {
-          console.log("[Effect] Updating nodes from canvasData:", canvasData.blocks);
-          setNodes(canvasData.blocks?.map(mapBlockToNode) || []);
-          console.log("[Effect] Updating edges from canvasData:", canvasData.connections);
-          setEdges(canvasData.connections?.map(mapConnectionToEdge) || []);
-      } else {
-          console.log("[Effect] Clearing nodes and edges as canvasData is null/undefined");
-          setNodes([]);
-          setEdges([]);
-      }
-  }, [canvasData, setNodes, setEdges]);
-
-  // Undo state
-  const [undoBlockId, setUndoBlockId] = useState<string | null>(null);
-  const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
-
-  // Restore needed states
-  const [editingNotesBlockId, setEditingNotesBlockId] = useState<string | null>(null);
-  const [editingNotes, setEditingNotes] = useState<string>("");
-  const [isCreatingBlockInput, setIsCreatingBlockInput] = useState<boolean>(false);
-  const [newBlockPosition, setNewBlockPosition] = useState<{ x: number; y: number }>({ x: 100, y: 100 });
-
-  // NEW: State for selected node for the Sheet
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-
-  // State to control Sheet visibility explicitly (derived from selectedNode)
-  const isSidebarOpen = !!selectedNode;
-
-  // Create Block Mutation
-  const { mutate: performCreateBlock, isPending: isCreatingBlock } = useMutation({
-    mutationFn: createBlock,
-    onSuccess: (newBlock) => {
-      console.log("Block created:", newBlock);
-      // OPTION 1: Manual Cache Update (optimistic-like)
-      // This is often still good for instant UI feedback
-      queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-        if (!oldData) return undefined;
-        return {
-          ...oldData,
-          blocks: [...(oldData.blocks || []), newBlock],
-        };
-      });
-      // OPTION 2: Invalidation (ensures consistency, triggers useQuery refetch)
-      // If using only invalidate, remove setQueryData above.
-      // Keeping both can be okay, invalidate will usually just confirm the manual update.
-      // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
-
-      showUndoNotification(newBlock.id);
-    },
-    onError: (err) => {
-      console.error("Error creating block:", err);
-      alert("Failed to create block");
-    },
-  });
-
-  // Undo Block Mutation
-  const { mutate: performUndoBlockCreation } = useMutation({
-      mutationFn: undoBlockCreation,
-      onSuccess: (success, blockId) => {
-          if (success) {
-              console.log(`[Page] Block ${blockId} undone successfully.`);
-              // Invalidate canvas query to refetch data for useQuery
-              queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
-              setUndoBlockId(null);
-              if (undoTimeoutId) clearTimeout(undoTimeoutId);
-          } else {
-              handleUndoFail(blockId);
-          }
-      },
-      onError: (err, blockId) => {
-          console.error(`[Page] Error undoing block creation for ${blockId}:`, err);
-          alert("Failed to undo block.");
-          handleUndoFail(blockId);
-      }
-  });
-
-  // NEW: Mutation for updating block position
-  const { mutate: performUpdateBlockPosition } = useMutation({
-      mutationFn: updateBlockPosition,
-      onSuccess: (updatedBlockData, variables) => {
-          if (!updatedBlockData) return; // Handle null case if API returns null on error
-          console.log(`Block ${variables.blockId} position updated`);
-          // Update the specific block within the canvas query cache
-          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-              if (!oldData || !oldData.blocks) return oldData;
-              return {
-                  ...oldData,
-                  blocks: oldData.blocks.map(block =>
-                      block.id === variables.blockId
-                          ? { ...block, position: updatedBlockData.position, updatedAt: updatedBlockData.updatedAt }
-                          : block
-                  ),
-              };
-          });
-      },
-      onError: (err, variables) => {
-          console.error(`Error updating position for block ${variables.blockId}:`, err);
-          alert(`Failed to save block position for ${variables.blockId}.`); // Simple feedback
-          // Consider reverting optimistic update if implemented
-          // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] }); // Refetch to revert
-      },
-  });
-
-  // NEW: Mutation for updating block content
-  const { mutate: performUpdateBlockContent } = useMutation({
-      mutationFn: updateBlockContent,
-      onSuccess: (updatedBlockData, variables) => {
-          if (!updatedBlockData) return;
-          console.log(`Block ${variables.blockId} content updated`);
-          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-              if (!oldData || !oldData.blocks) return oldData;
-              return {
-                  ...oldData,
-                  blocks: oldData.blocks.map(block =>
-                      block.id === variables.blockId
-                          ? { ...block, content: updatedBlockData.content, updatedAt: updatedBlockData.updatedAt }
-                          : block
-                  ),
-              };
-          });
-      },
-      onError: (err, variables) => {
-          console.error(`Error updating content for block ${variables.blockId}:`, err);
-          alert(`Failed to save block content for ${variables.blockId}.`);
-      },
-  });
-
-  // Handler for failed/expired undo
-  const handleUndoFail = (blockId: string) => {
-         console.warn(`[Page] Failed to undo block ${blockId} (likely expired)`);
-         alert("Undo period expired or failed.");
-         if (undoBlockId === blockId) setUndoBlockId(null);
-         if (undoTimeoutId) clearTimeout(undoTimeoutId);
-    }
-
-  // Mutation for updating the Canvas Title
-  const { mutate: performUpdateCanvasTitle } = useMutation({
-    mutationFn: updateCanvasTitle,
-    onSuccess: (updatedCanvasData, variables) => {
-        if (!updatedCanvasData) {
-            console.error("Canvas title update failed - no data returned");
-            alert("Failed to update canvas title. The canvas may not exist or you don't have permission.");
-            return;
-        }
-        console.log(`Canvas ${variables.id} title updated`);
-        queryClient.setQueryData<CanvasData>(['canvas', variables.id], (oldData) => {
-            if (!oldData) return oldData;
-            return { ...oldData, title: updatedCanvasData.title, updatedAt: updatedCanvasData.updatedAt };
-        });
-    },
-    onError: (err) => {
-        console.error("Error updating canvas title:", err);
-        const errorObj = err as { response?: { errors?: { extensions?: { code?: string } }[] } };
-        const errors = errorObj?.response?.errors;
-        if (errors && errors.length > 0) {
-            const graphQLError = errors[0];
-            if (graphQLError?.extensions?.code === "NOT_FOUND_OR_FORBIDDEN") {
-                alert("Cannot update this canvas: either it doesn't exist or you don't have permission to edit it.");
-                queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] });
-                return;
-            }
-        }
-        alert("Failed to save canvas title. Please try again or refresh the page.");
-    },
+  errorComponent: CanvasErrorComponent,
 });
 
-  // Handler for saving the canvas title (passed to CanvasHeader -> CanvasWorkspace)
+// --- Page Component ---
+function CanvasViewPage() {
+  const { canvasId } = Route.useParams();
+  const reactFlowInstance = useReactFlow(); // Get React Flow instance
+
+  // --- Hooks ---
+  const { canvasData, isCanvasLoading, canvasError } = useCanvasData(canvasId);
+  const { nodes, edges, onNodesChange, onEdgesChange, setEdges } = useReactFlowState(canvasData);
+  const {
+    selectedNode,
+    setSelectedNode,
+    isSidebarOpen,
+    handleCloseSidebar,
+    editingNotesBlockId,
+    editingNotes,
+    handleOpenNotesEditor,
+    handleCloseNotesEditor,
+    isCreatingBlockInput,
+    newBlockPosition,
+    handleOpenBlockCreator,
+    handleCloseBlockCreator,
+    undoBlockId, // Keep track of undo state if needed for UI elements
+    handleShowUndoNotification,
+    handleUndoFail,
+  } = useCanvasUIState();
+
+  const mutations = useCanvasMutations(
+    canvasId,
+    setEdges, // Pass setEdges for optimistic updates
+    handleShowUndoNotification,
+    handleUndoFail
+  );
+
+  const interactionHandlers = useCanvasInteractionHandlers(
+    canvasId,
+    { // Pass only the needed mutation functions
+      performUpdateBlockPosition: mutations.performUpdateBlockPosition,
+      performCreateConnection: mutations.performCreateConnection,
+      performDeleteConnection: mutations.performDeleteConnection,
+    },
+    { // Pass only the needed UI handlers
+      setSelectedNode,
+      handleOpenNotesEditor,
+      handleOpenBlockCreator,
+    }
+  );
+
+  // --- Specific Handlers using Hook Results ---
+
   const handleTitleSave = useCallback((newTitle: string) => {
-      if (!canvasId) return; // Should always have canvasId here
-      const trimmedTitle = newTitle.trim();
-      if (trimmedTitle) {
-          // Use the correct mutation function name
-          performUpdateCanvasTitle({ id: canvasId, title: trimmedTitle }); 
-      } else {
-          // TODO: Show an error message - title cannot be empty
-          console.error("Canvas title cannot be empty.");
-      }
-      // Ensure dependency array uses the correct mutation function
-  }, [canvasId, performUpdateCanvasTitle]); 
+    if (!canvasId) return;
+    const trimmedTitle = newTitle.trim();
+    if (trimmedTitle) {
+      mutations.performUpdateCanvasTitle({ id: canvasId, title: trimmedTitle });
+    } else {
+      console.error("Canvas title cannot be empty.");
+      alert("Canvas title cannot be empty."); // User feedback
+    }
+  }, [canvasId, mutations.performUpdateCanvasTitle]);
 
-  // Handler for creating a new block (passed to CanvasHeader)
-  const handleCreateNewBlock = () => {
-    const position = { x: Math.random() * 400, y: Math.random() * 400 };
-    setNewBlockPosition(position);
-    setIsCreatingBlockInput(true);
-  };
+  const handleCreateNewBlock = useCallback(() => {
+    // Generate a somewhat random position within a reasonable area
+    const viewport = reactFlowInstance.getViewport();
+    const position = {
+        x: Math.random() * (viewport?.width * 0.6 || 400), // Use optional chaining and fallback
+        y: Math.random() * (viewport?.height * 0.6 || 400) // Use optional chaining and fallback
+    };
+    handleOpenBlockCreator(position);
+  }, [handleOpenBlockCreator, reactFlowInstance]);
 
-  // Handler for background double-click - creates a block at the clicked position
-  const handleBackgroundDoubleClick = useCallback((position: { x: number, y: number }) => {
-    console.log('Background Double Clicked at position:', position);
-    setNewBlockPosition(position);
-    setIsCreatingBlockInput(true);
-  }, []);
-
-  // Handler for showing undo notification
-  const showUndoNotification = useCallback((blockId: string) => {
-      console.log("[Page] Showing undo for", blockId);
-      setUndoBlockId(blockId);
-      if (undoTimeoutId) clearTimeout(undoTimeoutId);
-      const timeoutId = window.setTimeout(() => {
-          setUndoBlockId(null);
-      }, 30 * 1000 - 1000);
-      setUndoTimeoutId(timeoutId);
-  }, [undoTimeoutId]);
-
-  const dragStartPositionsRef = React.useRef<Map<string, { x: number; y: number }>>(new Map());
-
-  const handleNodeDragStart = useCallback((_event: React.MouseEvent, node: Node) => {
-    dragStartPositionsRef.current.set(node.id, { ...node.position });
-  }, []);
-
-  const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
-    const startPos = dragStartPositionsRef.current.get(node.id);
-    if (!startPos) {
-      performUpdateBlockPosition({ blockId: node.id, position: node.position });
+  const handleBlockCreationSave = useCallback((inputValue: string) => {
+    const trimmedInput = inputValue.trim();
+    if (!trimmedInput || !canvasId) {
+      handleCloseBlockCreator();
       return;
     }
-    const dx = Math.abs(node.position.x - startPos.x);
-    const dy = Math.abs(node.position.y - startPos.y);
-    const threshold = 1;
-    if (dx < threshold && dy < threshold) {
-      console.log(`Skip update for ${node.id}, movement too small (${dx}, ${dy})`);
-      return;
+    let blockType: 'text' | 'link' = 'text';
+    let blockContent: unknown = { text: trimmedInput };
+    if (isUrl(trimmedInput)) {
+      blockType = 'link';
+      blockContent = { url: trimmedInput };
     }
-    performUpdateBlockPosition({ blockId: node.id, position: node.position });
-  }, [performUpdateBlockPosition]);
+    mutations.performCreateBlock({ canvasId, type: blockType, position: newBlockPosition, content: blockContent });
+    handleCloseBlockCreator();
+  }, [canvasId, newBlockPosition, mutations.performCreateBlock, handleCloseBlockCreator]);
 
-  // Handler for single click on a node - sets the node to show in the Sheet
-  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-      console.log('Node Clicked:', node);
-      setSelectedNode(node);
-      // Sheet open state is derived from selectedNode
-  }, []);
+  const handleNotesSave = useCallback((newNotes: string) => {
+    if (editingNotesBlockId === null) return;
+    mutations.performUpdateBlockNotes({ blockId: editingNotesBlockId, notes: newNotes });
+    handleCloseNotesEditor(); // Close modal on save
+  }, [editingNotesBlockId, mutations.performUpdateBlockNotes, handleCloseNotesEditor]);
 
-  // UPDATED: Handler for Node Double Click - also closes Sheet
-  const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
-      setSelectedNode(null);
-      console.log("Node Double Clicked:", node);
-      const blockData = node.data.rawBlock as Block | undefined;
-      if (!blockData) { return; }
-
-      if (blockData.type === 'text' && isTextBlockContent(blockData.content)) {
-          console.log("TODO: Open text edit modal for:", blockData.id);
-      } else if (blockData.type === 'link' && isLinkBlockContent(blockData.content)) {
-          const url = blockData.content.url;
-          let clickableUrl = url;
-          if (!/^https?:\/\//i.test(clickableUrl)) { clickableUrl = `http://${clickableUrl}`; }
-          window.open(clickableUrl, '_blank', 'noopener,noreferrer');
-      } else {
-          console.log("Opening notes editor for block type:", blockData.type);
-          setEditingNotes(blockData.notes || '');
-          setEditingNotesBlockId(blockData.id);
-      }
-  }, []);
-
-  // Handler for Sheet's onOpenChange (handles closing via X, overlay click, etc.)
-  const handleSheetOpenChange = (open: boolean) => {
-      if (!open) {
-          setSelectedNode(null);
-      }
-      // We don't typically set it to open=true here, that's done by handleNodeClick
-  };
-
-  // Restore notes update mutation and get isPending flag
-  const { mutate: performUpdateBlockNotes, isPending: isUpdatingNotes } = useMutation({
-      mutationFn: updateBlockNotes,
-      onSuccess: (updatedBlockData, variables) => {
-          if (!updatedBlockData) return;
-          console.log(`Block ${variables.blockId} notes updated`);
-          queryClient.setQueryData<CanvasData>(['canvas', canvasId], (oldData) => {
-              if (!oldData || !oldData.blocks) return oldData;
-              return {
-                  ...oldData,
-                  blocks: oldData.blocks.map(block =>
-                      block.id === variables.blockId
-                          ? { ...block, notes: updatedBlockData.notes, updatedAt: updatedBlockData.updatedAt }
-                          : block
-                  ),
-              };
-          });
-          setEditingNotesBlockId(null);
-      },
-      onError: (err, variables) => {
-          console.error(`Error updating notes for block ${variables.blockId}:`, err);
-          alert(`Failed to save block notes for ${variables.blockId}.`);
-      },
-  });
-
-  // Restore connection mutations and handlers
-  const createConnectionMutation = useMutation({
-      mutationFn: createConnection,
-      onSuccess: (newConnectionData) => {
-          if (!newConnectionData) return;
-          console.log('Connection created:', newConnectionData);
-          
-          // Option 1: Cache Update (Keep for data consistency, but don't rely on for UI)
-          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-              if (!oldData) return oldData;
-              return {
-                  ...oldData,
-                  connections: [...(oldData.connections || []), newConnectionData],
-              };
-          });
-
-          // Option 2: Direct State Update (Use this for immediate UI feedback)
-          const newEdge = mapConnectionToEdge(newConnectionData);
-          setEdges((eds) => addEdge(newEdge, eds));
-      },
-      onError: (error) => {
-          console.error("Failed to create connection:", error);
-          // If using optimistic updates with Option 2, revert here:
-          // queryClient.invalidateQueries({ queryKey: ['canvas', canvasId] }); // Or remove edge from state
-      },
-  });
-
-  const deleteConnectionMutation = useMutation({
-      mutationFn: deleteConnection,
-      onSuccess: (success, variables) => {
-          if (!success) return;
-          console.log('Connection deleted:', variables.connectionId);
-          // Update cache (should trigger useEffect for edges state)
-          queryClient.setQueryData<Canvas>(['canvas', canvasId], (oldData) => {
-              if (!oldData) return oldData;
-              return {
-                  ...oldData,
-                  connections: (oldData.connections || []).filter((conn: ApiConnection) => conn.id !== variables.connectionId),
-              };
-          });
-      },
-      onError: (error, variables) => {
-          console.error(`Failed to delete connection ${variables.connectionId}:`, error);
-      },
-  });
-
-  // Fix handleConnect signature and logic
-  const handleConnect = useCallback((connection: Connection | Edge) => {
-      console.log('Attempting to connect:', connection);
-      if (!connection.source || !connection.target || !canvasId) {
-          console.warn("Connection attempt missing required data", connection);
-          return;
-      }
-      // Handles can be undefined on Edge type, default to null for API
-      const sourceHandle = 'sourceHandle' in connection ? connection.sourceHandle : null;
-      const targetHandle = 'targetHandle' in connection ? connection.targetHandle : null;
-
-      createConnectionMutation.mutate({
-          canvasId: canvasId!,
-          sourceBlockId: connection.source,
-          targetBlockId: connection.target,
-          sourceHandle: sourceHandle,
-          targetHandle: targetHandle,
-      });
-  }, [canvasId, createConnectionMutation]);
-
-  // Restore block creation modal handlers
-  const handleBlockCreationSave = (inputValue: string) => {
-      const trimmedInput = inputValue.trim();
-      if (!trimmedInput) { setIsCreatingBlockInput(false); return; }
-      let blockType: 'text' | 'link' = 'text';
-      let blockContent: unknown = { text: trimmedInput };
-      if (isUrl(trimmedInput)) {
-          blockType = 'link';
-          blockContent = { url: trimmedInput };
-      }
-      performCreateBlock({ canvasId, type: blockType, position: newBlockPosition, content: blockContent });
-      setIsCreatingBlockInput(false);
-  };
-  const handleBlockCreationCancel = () => { setIsCreatingBlockInput(false); };
-
-  // Restore notes update mutation and handlers
-  const handleNotesSave = (newNotes: string) => {
-      if (editingNotesBlockId === null) return;
-      performUpdateBlockNotes({ blockId: editingNotesBlockId, notes: newNotes });
-  };
-  const handleNotesCancel = () => { setEditingNotesBlockId(null); setEditingNotes(""); };
-
-  const handleEditNotesFromSidebar = useCallback((blockId: string) => {
-      const node = nodes.find(n => n.id === blockId); // Find the node first
-      // Access data.rawBlock on the *found node*
-      const currentNotes = node?.data?.rawBlock?.notes || ''; 
-      setSelectedNode(null);
-      setEditingNotes(currentNotes);
-      setEditingNotesBlockId(blockId);
-  }, [nodes]); // Add nodes dependency
-
-  // REINSTATE handleEdgesDelete
-  const handleEdgesDelete = useCallback((deletedEdges: Edge[]) => {
-      console.log('Attempting to delete edges:', deletedEdges);
-      // Iterate and call mutate for each edge
-      deletedEdges.forEach(edge => {
-          deleteConnectionMutation.mutate({ connectionId: edge.id });
-      });
-  }, [deleteConnectionMutation]);
-
-  // Helper function to render sheet content safely
+  // --- Sidebar Content Renderer ---
+  // Note: handleBackgroundDoubleClickWrapper is removed as CanvasWorkspace now handles position calculation
   const renderSheetContent = () => {
-      if (!selectedNode) return null;
-      const blockData = selectedNode.data.rawBlock as Block | undefined;
-      if (!blockData) return <p>Error loading block data.</p>;
+    if (!selectedNode) return null;
+    const blockData = selectedNode.data.rawBlock as Block | undefined;
+    if (!blockData) return <p>Error loading block data.</p>;
 
-      const relatedEdges = edges.filter(edge => 
-          edge.source === selectedNode.id || edge.target === selectedNode.id
-      );
+    // Find related edges (connections)
+    const relatedEdges = edges.filter(edge =>
+        edge.source === selectedNode.id || edge.target === selectedNode.id
+    );
+    const incomingConnections = relatedEdges
+        .filter(edge => edge.target === selectedNode.id)
+        .map(edge => nodes.find(n => n.id === edge.source)?.data?.label || edge.source); // Minor whitespace change
+    const outgoingConnections = relatedEdges
+        .filter(edge => edge.source === selectedNode.id)
+        .map(edge => nodes.find(n => n.id === edge.target)?.data?.label || edge.target); // Minor whitespace change
 
-      const incomingConnections = relatedEdges
-          .filter(edge => edge.target === selectedNode.id)
-          .map(edge => {
-              // Find the source node and safely access its label
-              const sourceNode = nodes.find(n => n.id === edge.source);
-              const sourceLabel = sourceNode && sourceNode.data ? sourceNode.data.label : edge.source;
-              
-              return {
-                  id: edge.id,
-                  connectedNodeId: edge.source,
-                  connectedNodeLabel: sourceLabel
-              };
-          });
+    const displayContent = () => {
+      if (!blockData.content) return '(empty)';
+    }; // End of displayContent inner function
 
-      const outgoingConnections = relatedEdges
-          .filter(edge => edge.source === selectedNode.id)
-          .map(edge => {
-              // Find the target node and safely access its label
-              const targetNode = nodes.find(n => n.id === edge.target);
-              const targetLabel = targetNode && targetNode.data ? targetNode.data.label : edge.target;
-              
-              return {
-                  id: edge.id,
-                  connectedNodeId: edge.target,
-                  connectedNodeLabel: targetLabel
-              };
-          });
+    return (
+        <>
+            <SheetHeader>
+                <SheetTitle>Block Info</SheetTitle>
+            </SheetHeader>
+            <div className="py-4 space-y-4 overflow-y-auto">
+                <div className={styles.infoItem}><strong>ID:</strong> <span>{blockData.id}</span></div>
+                <div className={styles.infoItem}><strong>Type:</strong> <span>{blockData.type}</span></div>
+                <div className={styles.infoItem}><strong>Created:</strong> <span>{new Date(blockData.createdAt).toLocaleString()}</span></div>
+                <div className={styles.infoItem}><strong>Updated:</strong> <span>{new Date(blockData.updatedAt).toLocaleString()}</span></div>
+                <div className={styles.contentPreview}><h4>Content:</h4>{displayContent()}</div>
+                <div className={styles.connectionsSection}>
+                    <h4>Connections</h4>
+                    {relatedEdges.length === 0 ? <p className={styles.noConnections}>No connections.</p> : (
+                        <div className={styles.connectionList}>
+                            {incomingConnections.length > 0 && <div><h5>Incoming:</h5><ul>{incomingConnections.map((label, i) => <li key={`in-${i}`}>{label}</li>)}</ul></div>}
+                            {outgoingConnections.length > 0 && <div><h5>Outgoing:</h5><ul>{outgoingConnections.map((label, i) => <li key={`out-${i}`}>{label}</li>)}</ul></div>}
+                        </div>
+                    )}
+                </div>
+                <div className={styles.notesSection}>
+                    <h4>Notes / Reflections:</h4>
+                    <p className={styles.notesContent}>{blockData.notes || '(No notes yet)'}</p>
+                    <Button variant="outline" size="sm" onClick={() => handleOpenNotesEditor(blockData.id, blockData.notes || '')}>
+                        Edit Notes
+                    </Button>
+                </div>
+            </div>
+        </>
+    );
+  } // End of renderSheetContent function
 
-      const displayContent = () => {
-        if (!blockData.content) return '(empty)';
-        if (isTextBlockContent(blockData.content)) {
-            return <p className={styles.sheetTextContent}>{blockData.content.text}</p>;
-        }
-        if (isLinkBlockContent(blockData.content)) {
-            return <p className={styles.sheetLinkContent}>{blockData.content.url}</p>;
-        }
-        try {
-            return <pre className={styles.sheetJsonContent}>{JSON.stringify(blockData.content, null, 2)}</pre>;
-        } catch (_e) {
-            return '(Cannot display content)';
-        }
-      };
-
-      return (
-          <>
-              <SheetHeader>
-                  <SheetTitle>Block Info</SheetTitle>
-                  {/* Optional: Add description or more header info */}
-                  {/* <SheetDescription>Details for the selected block.</SheetDescription> */}
-              </SheetHeader>
-              <div className="py-4 space-y-4 overflow-y-auto"> {/* Allow vertical scroll */} 
-                  <div className={styles.infoItem}>
-                      <strong>ID:</strong> <span>{blockData.id}</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                      <strong>Type:</strong> <span>{blockData.type}</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                      <strong>Created At:</strong>
-                      <span>{new Date(blockData.createdAt).toLocaleString()}</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                      <strong>Updated At:</strong>
-                      <span>{new Date(blockData.updatedAt).toLocaleString()}</span>
-                  </div>
-                  
-                  <div className={styles.contentPreview}>
-                      <h4>Content:</h4>
-                      {displayContent()} 
-                  </div>
-
-                  {/* Connections Section */}
-                  <div className={styles.connectionsSection}>
-                      <h4>Connections</h4>
-                      {relatedEdges.length === 0 ? (
-                          <p className={styles.noConnections}>No connections.</p>
-                      ) : (
-                          <div className={styles.connectionList}>
-                              {incomingConnections.length > 0 && (
-                                  <div>
-                                      <h5>Incoming:</h5>
-                                      <ul>
-                                          {incomingConnections.map(conn => (
-                                              <li key={conn.id}>From: {conn.connectedNodeLabel}</li>
-                                          ))}
-                                      </ul>
-                                  </div>
-                              )}
-                              {outgoingConnections.length > 0 && (
-                                  <div>
-                                      <h5>Outgoing:</h5>
-                                      <ul>
-                                          {outgoingConnections.map(conn => (
-                                              <li key={conn.id}>To: {conn.connectedNodeLabel}</li>
-                                          ))}
-                                      </ul>
-                                  </div>
-                              )}
-                          </div>
-                      )}
-                  </div>
-
-                  <div className={styles.notesSection}>
-                      <h4>Notes / Reflections:</h4>
-                      <p className={styles.notesContent}>{blockData.notes || '(No notes yet)'}</p>
-                      <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleEditNotesFromSidebar(blockData.id)}
-                      >
-                          Edit Notes
-                      </Button>
-                  </div>
-                  {/* Add Connections Later */} 
-              </div>
-              {/* Optional Footer */}
-              {/* <SheetFooter>
-                  <SheetClose asChild>
-                      <Button variant="outline">Close</Button>
-                  </SheetClose>
-              </SheetFooter> */}
-          </>
-      );
-  }
-
-  // Handle loading and error states from useQuery
-  if (isCanvasLoading && !canvasData) { // Check if loading initial data (canvasData is undefined)
-      return <div>Loading Canvas...</div>; // Or a spinner component
+  // --- Render Logic ---
+  if (isCanvasLoading && !canvasData) {
+    return <div>Loading Canvas...</div>;
   }
 
   if (canvasError) {
-      return <CanvasErrorComponent error={canvasError} />;
+    return <CanvasErrorComponent error={canvasError} />;
   }
 
   if (!canvasData) {
-      // This case might happen if loader failed but useQuery hasn't errored yet,
-      // or if fetch returns null explicitly after initial load.
-      return <div>Canvas not found or failed to load.</div>;
+    return <div>Canvas not found or failed to load.</div>;
   }
 
   return (
     <div className={styles.pageContainer}>
       <CanvasHeader
-        initialCanvas={canvasData} 
+        initialCanvas={canvasData}
         onCreateBlock={handleCreateNewBlock}
-        isCreatingBlock={isCreatingBlock}
+        isCreatingBlock={mutations.isCreatingBlock}
       />
-      <div className="flex flex-grow overflow-hidden"> {/* Simple flex wrapper */} 
+      <div className="flex flex-grow overflow-hidden">
         <CanvasWorkspace
-            key={canvasId}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            canvasTitle={canvasData.title}
-            onSaveTitle={handleTitleSave}
-            onNodeDragStart={handleNodeDragStart}
-            onNodeDragStop={handleNodeDragStop}
-            onNodeClick={handleNodeClick} // Pass single click handler
-            onNodeDoubleClick={handleNodeDoubleClick} // Pass double click handler
-            onConnect={handleConnect}
-            onEdgesDelete={handleEdgesDelete} // Pass the handler function
-            onBackgroundDoubleClick={handleBackgroundDoubleClick} // Pass background double-click handler
-            // Add className for Tailwind layout if needed
-            // className="flex-grow h-full" 
+          key={canvasId} // Ensure workspace rerenders if canvasId changes
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          canvasTitle={canvasData.title}
+          onSaveTitle={handleTitleSave}
+          onNodeDragStart={interactionHandlers.handleNodeDragStart}
+          onNodeDragStop={interactionHandlers.handleNodeDragStop}
+          onNodeClick={interactionHandlers.handleNodeClick}
+          onNodeDoubleClick={interactionHandlers.handleNodeDoubleClick}
+          onConnect={interactionHandlers.handleConnect}
+          onEdgesDelete={interactionHandlers.handleEdgesDelete}
+          onBackgroundDoubleClick={interactionHandlers.handleBackgroundDoubleClick} // Pass handler directly
         />
       </div>
 
-      {/* Render Sheet */} 
-      <Sheet open={isSidebarOpen} onOpenChange={handleSheetOpenChange}>
-          <SheetContent className={styles.sheetContent}> {/* Add custom class if needed */} 
-              {renderSheetContent()}
-          </SheetContent>
+      <Sheet open={isSidebarOpen} onOpenChange={(open) => !open && handleCloseSidebar()}>
+        <SheetContent className={styles.sheetContent}>
+          {renderSheetContent()}
+        </SheetContent>
       </Sheet>
 
-       {/* Render needed modals */}
-       {editingNotesBlockId && (
-           <NotesEditModal
-               initialNotes={editingNotes}
-               onSave={handleNotesSave}
-               onCancel={handleNotesCancel}
-               isSaving={isUpdatingNotes}
-           />
-       )}
-       {isCreatingBlockInput && (
-           <BlockCreationModal
-               onSave={handleBlockCreationSave}
-               onCancel={handleBlockCreationCancel}
-               isSaving={isCreatingBlock}
-           />
+      {editingNotesBlockId && (
+        <NotesEditModal
+          initialNotes={editingNotes}
+          onSave={handleNotesSave}
+          onCancel={handleCloseNotesEditor}
+          isSaving={mutations.isUpdatingNotes}
+        />
+      )}
+      {isCreatingBlockInput && (
+        <BlockCreationModal
+          onSave={handleBlockCreationSave}
+          onCancel={handleCloseBlockCreator}
+          isSaving={mutations.isCreatingBlock}
+        />
+      )}
+
+      {/* Optional: Add Undo Notification UI element here if needed */}
+      {undoBlockId && (
+         <div className={styles.undoNotification}>
+             Block created. <button onClick={() => mutations.performUndoBlockCreation(undoBlockId)}>Undo</button>
+             {/* Add a visual timer maybe? */}
+         </div>
        )}
     </div>
   );
 }
 
-// Simple component to display loading errors from the loader
+// Simple component to display loading errors
 function CanvasErrorComponent({ error }: { error: Error }) {
-    return (
-        <div className={styles.container} style={{ color: 'red' }}>
-            <Link to="/">&laquo; Back to Canvases</Link>
-            <h2>Error Loading Canvas</h2>
-            <p>{error?.message ?? 'An unknown error occurred.'}</p>
-        </div>
-    );
+  return (
+    <div className={styles.container} style={{ color: 'red' }}>
+      <Link to="/">&laquo; Back to Canvases</Link>
+      <h2>Error Loading Canvas</h2>
+      <p>{error?.message ?? 'An unknown error occurred.'}</p>
+    </div>
+  );
 }
-
-// Restore constant if needed by showUndoNotification
-// const UNDO_GRACE_PERIOD_MS = 30 * 1000;

@@ -144,3 +144,13 @@
     *   Backend update for block position now only triggers if the block was moved beyond a minimal threshold.
     *   Updated `CanvasWorkspace` to forward `onNodeDragStart` to React Flow.
     *   This reduces redundant network calls and improves performance during block interactions.
+
+*   **Milestone:** Refactored Canvas Page Component (`canvas.$canvasId.tsx`).
+    *   Extracted data fetching logic into `useCanvasData` hook.
+    *   Extracted React Flow state management into `useReactFlowState` hook.
+    *   Extracted UI state management (modals, sidebar, undo) into `useCanvasUIState` hook.
+    *   Consolidated API mutations into `useCanvasMutations` hook.
+    *   Grouped React Flow interaction handlers into `useCanvasInteractionHandlers` hook.
+    *   Created `canvasUtils.ts` for type guards and data mappers.
+    *   Created `constants.ts` for query keys and magic numbers.
+    *   Simplified the main `CanvasViewPage` component to use these hooks, improving modularity and readability.
