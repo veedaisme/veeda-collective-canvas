@@ -154,3 +154,4 @@
     *   Created `canvasUtils.ts` for type guards and data mappers.
     *   Created `constants.ts` for query keys and magic numbers.
     *   Simplified the main `CanvasViewPage` component to use these hooks, improving modularity and readability.
+    *   Fixed single/double-click handling conflict on nodes.

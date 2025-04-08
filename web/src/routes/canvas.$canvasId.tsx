@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import React, { useCallback } from 'react';
-import { Node, useReactFlow } from 'reactflow'; // Import useReactFlow
+import { Node } from 'reactflow'; // REMOVED useReactFlow import
 import 'reactflow/dist/style.css';
 
 // UI Components
@@ -42,7 +42,7 @@ export const Route = createFileRoute('/canvas/$canvasId')({
 // --- Page Component ---
 function CanvasViewPage() {
   const { canvasId } = Route.useParams();
-  const reactFlowInstance = useReactFlow(); // Get React Flow instance
+  // REMOVED: const reactFlowInstance = useReactFlow(); - Cannot be called here
 
   // --- Hooks ---
   const { canvasData, isCanvasLoading, canvasError } = useCanvasData(canvasId);
@@ -57,32 +57,32 @@ function CanvasViewPage() {
     handleOpenNotesEditor,
     handleCloseNotesEditor,
     isCreatingBlockInput,
-    newBlockPosition,
+    newBlockPosition, // Position set by handleOpenBlockCreator
     handleOpenBlockCreator,
     handleCloseBlockCreator,
-    undoBlockId, // Keep track of undo state if needed for UI elements
+    undoBlockId,
     handleShowUndoNotification,
     handleUndoFail,
   } = useCanvasUIState();
 
   const mutations = useCanvasMutations(
     canvasId,
-    setEdges, // Pass setEdges for optimistic updates
+    setEdges,
     handleShowUndoNotification,
     handleUndoFail
   );
 
   const interactionHandlers = useCanvasInteractionHandlers(
     canvasId,
-    { // Pass only the needed mutation functions
+    {
       performUpdateBlockPosition: mutations.performUpdateBlockPosition,
       performCreateConnection: mutations.performCreateConnection,
       performDeleteConnection: mutations.performDeleteConnection,
     },
-    { // Pass only the needed UI handlers
+    {
       setSelectedNode,
       handleOpenNotesEditor,
-      handleOpenBlockCreator,
+      handleOpenBlockCreator, // Pass the function to open the creator modal
     }
   );
 
@@ -95,19 +95,15 @@ function CanvasViewPage() {
       mutations.performUpdateCanvasTitle({ id: canvasId, title: trimmedTitle });
     } else {
       console.error("Canvas title cannot be empty.");
-      alert("Canvas title cannot be empty."); // User feedback
+      alert("Canvas title cannot be empty.");
     }
   }, [canvasId, mutations.performUpdateCanvasTitle]);
 
   const handleCreateNewBlock = useCallback(() => {
-    // Generate a somewhat random position within a reasonable area
-    const viewport = reactFlowInstance.getViewport();
-    const position = {
-        x: Math.random() * (viewport?.width * 0.6 || 400), // Use optional chaining and fallback
-        y: Math.random() * (viewport?.height * 0.6 || 400) // Use optional chaining and fallback
-    };
-    handleOpenBlockCreator(position);
-  }, [handleOpenBlockCreator, reactFlowInstance]);
+    // Open the creator modal. Position will be determined on save or by background click.
+    // Pass a default position; it will be updated if triggered by background click.
+    handleOpenBlockCreator({ x: 100, y: 100 });
+  }, [handleOpenBlockCreator]);
 
   const handleBlockCreationSave = useCallback((inputValue: string) => {
     const trimmedInput = inputValue.trim();
@@ -121,43 +117,52 @@ function CanvasViewPage() {
       blockType = 'link';
       blockContent = { url: trimmedInput };
     }
-    mutations.performCreateBlock({ canvasId, type: blockType, position: newBlockPosition, content: blockContent });
+    // Use newBlockPosition which is managed by useCanvasUIState
+    const finalPosition = newBlockPosition || { x: 150, y: 150 }; // Fallback position
+    mutations.performCreateBlock({ canvasId, type: blockType, position: finalPosition, content: blockContent });
     handleCloseBlockCreator();
   }, [canvasId, newBlockPosition, mutations.performCreateBlock, handleCloseBlockCreator]);
 
   const handleNotesSave = useCallback((newNotes: string) => {
     if (editingNotesBlockId === null) return;
     mutations.performUpdateBlockNotes({ blockId: editingNotesBlockId, notes: newNotes });
-    handleCloseNotesEditor(); // Close modal on save
+    handleCloseNotesEditor();
   }, [editingNotesBlockId, mutations.performUpdateBlockNotes, handleCloseNotesEditor]);
 
   // --- Sidebar Content Renderer ---
-  // Note: handleBackgroundDoubleClickWrapper is removed as CanvasWorkspace now handles position calculation
   const renderSheetContent = () => {
     if (!selectedNode) return null;
     const blockData = selectedNode.data.rawBlock as Block | undefined;
     if (!blockData) return <p>Error loading block data.</p>;
 
-    // Find related edges (connections)
     const relatedEdges = edges.filter(edge =>
         edge.source === selectedNode.id || edge.target === selectedNode.id
     );
     const incomingConnections = relatedEdges
         .filter(edge => edge.target === selectedNode.id)
-        .map(edge => nodes.find(n => n.id === edge.source)?.data?.label || edge.source); // Minor whitespace change
+        .map(edge => nodes.find(n => n.id === edge.source)?.data?.label || edge.source);
     const outgoingConnections = relatedEdges
         .filter(edge => edge.source === selectedNode.id)
-        .map(edge => nodes.find(n => n.id === edge.target)?.data?.label || edge.target); // Minor whitespace change
+        .map(edge => nodes.find(n => n.id === edge.target)?.data?.label || edge.target);
 
     const displayContent = () => {
       if (!blockData.content) return '(empty)';
-    }; // End of displayContent inner function
+      if (isTextBlockContent(blockData.content)) {
+          return <p className={styles.sheetTextContent}>{blockData.content.text}</p>;
+      }
+      if (isLinkBlockContent(blockData.content)) {
+          return <p className={styles.sheetLinkContent}>{blockData.content.url}</p>;
+      }
+      try {
+          return <pre className={styles.sheetJsonContent}>{JSON.stringify(blockData.content, null, 2)}</pre>;
+      } catch (_e) {
+          return '(Cannot display content)';
+      }
+    };
 
     return (
         <>
-            <SheetHeader>
-                <SheetTitle>Block Info</SheetTitle>
-            </SheetHeader>
+            <SheetHeader><SheetTitle>Block Info</SheetTitle></SheetHeader>
             <div className="py-4 space-y-4 overflow-y-auto">
                 <div className={styles.infoItem}><strong>ID:</strong> <span>{blockData.id}</span></div>
                 <div className={styles.infoItem}><strong>Type:</strong> <span>{blockData.type}</span></div>
@@ -183,17 +188,15 @@ function CanvasViewPage() {
             </div>
         </>
     );
-  } // End of renderSheetContent function
+  }
 
   // --- Render Logic ---
   if (isCanvasLoading && !canvasData) {
     return <div>Loading Canvas...</div>;
   }
-
   if (canvasError) {
     return <CanvasErrorComponent error={canvasError} />;
   }
-
   if (!canvasData) {
     return <div>Canvas not found or failed to load.</div>;
   }
@@ -207,7 +210,7 @@ function CanvasViewPage() {
       />
       <div className="flex flex-grow overflow-hidden">
         <CanvasWorkspace
-          key={canvasId} // Ensure workspace rerenders if canvasId changes
+          key={canvasId}
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -246,11 +249,9 @@ function CanvasViewPage() {
         />
       )}
 
-      {/* Optional: Add Undo Notification UI element here if needed */}
       {undoBlockId && (
          <div className={styles.undoNotification}>
              Block created. <button onClick={() => mutations.performUndoBlockCreation(undoBlockId)}>Undo</button>
-             {/* Add a visual timer maybe? */}
          </div>
        )}
     </div>

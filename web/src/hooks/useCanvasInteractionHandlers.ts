@@ -42,6 +42,8 @@ export function useCanvasInteractionHandlers(
 
     // Ref to store starting position during drag
     const dragStartPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+    // Ref for single click timeout
+    const clickTimeoutRef = useRef<number | null>(null);
 
     const handleNodeDragStart = useCallback((_event: React.MouseEvent, node: Node) => {
         dragStartPositionsRef.current.set(node.id, { ...node.position });
@@ -70,13 +72,28 @@ export function useCanvasInteractionHandlers(
     }, [performUpdateBlockPosition]);
 
     const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-        console.log('Node Clicked:', node);
-        setSelectedNode(node);
+        // Clear any previous timeout
+        if (clickTimeoutRef.current) {
+            clearTimeout(clickTimeoutRef.current);
+            clickTimeoutRef.current = null;
+        }
+        // Set a timeout to handle the single click after a delay
+        clickTimeoutRef.current = window.setTimeout(() => {
+            console.log('Node Single Click Action:', node.id);
+            setSelectedNode(node); // Open sidebar
+            clickTimeoutRef.current = null;
+        }, 250); // Adjust delay as needed (e.g., 200-300ms)
     }, [setSelectedNode]);
 
     const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
-        setSelectedNode(null); // Close sidebar on double click
-        console.log("Node Double Clicked:", node);
+        // Clear the single click timeout if it exists
+        if (clickTimeoutRef.current) {
+            clearTimeout(clickTimeoutRef.current);
+            clickTimeoutRef.current = null;
+        }
+
+        setSelectedNode(null); // Ensure sidebar is closed
+        console.log("Node Double Click Action:", node.id);
         const blockData = node.data.rawBlock as Block | undefined;
         if (!blockData) {
             console.error("No raw block data found on double-clicked node:", node.id);
