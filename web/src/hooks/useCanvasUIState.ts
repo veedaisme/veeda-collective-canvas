@@ -16,6 +16,10 @@ export function useCanvasUIState() {
     const [editingNotesBlockId, setEditingNotesBlockId] = useState<string | null>(null);
     const [editingNotes, setEditingNotes] = useState<string>("");
 
+    // Text Content Editing Modal state
+    const [editingContentBlockId, setEditingContentBlockId] = useState<string | null>(null);
+    const [editingContent, setEditingContent] = useState<string>("");
+
     // Block Creation Modal state
     const [isCreatingBlockInput, setIsCreatingBlockInput] = useState<boolean>(false);
     const [newBlockPosition, setNewBlockPosition] = useState<{ x: number; y: number }>({ x: 100, y: 100 });
@@ -35,7 +39,17 @@ export function useCanvasUIState() {
             setUndoBlockId(null);
         }, UNDO_GRACE_PERIOD_MS - 1000); // Subtract a second for safety margin
         setUndoTimeoutId(timeoutId);
-    }, [undoTimeoutId]); // Dependency on undoTimeoutId to clear previous timeout
+    }, [undoTimeoutId]);
+
+    const openContentEditor = useCallback((blockId: string, currentContent: string) => {
+        setEditingContentBlockId(blockId);
+        setEditingContent(currentContent);
+    }, []);
+
+    const closeContentEditor = useCallback(() => {
+        setEditingContentBlockId(null);
+        setEditingContent("");
+    }, []);
 
     const handleUndoFail = useCallback((blockId: string) => {
         console.warn(`[useCanvasUIState] Failed to undo block ${blockId} (likely expired)`);
@@ -77,6 +91,10 @@ export function useCanvasUIState() {
         editingNotes,
         handleOpenNotesEditor,
         handleCloseNotesEditor,
+        editingContentBlockId,
+        editingContent,
+        openContentEditor,
+        closeContentEditor,
         isCreatingBlockInput,
         newBlockPosition,
         handleOpenBlockCreator,

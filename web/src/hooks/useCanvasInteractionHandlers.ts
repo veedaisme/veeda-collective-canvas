@@ -22,6 +22,7 @@ interface CanvasUIHandlers {
     setSelectedNode: (node: Node | null) => void;
     handleOpenNotesEditor: (blockId: string, currentNotes: string) => void;
     handleOpenBlockCreator: (position: { x: number, y: number }) => void;
+    openContentEditor: (blockId: string, currentContent: string) => void;
 }
 
 /**
@@ -38,7 +39,7 @@ export function useCanvasInteractionHandlers(
     uiHandlers: CanvasUIHandlers
 ) {
     const { performUpdateBlockPosition, performCreateConnection, performDeleteConnection } = mutations;
-    const { setSelectedNode, handleOpenNotesEditor, handleOpenBlockCreator } = uiHandlers;
+    const { setSelectedNode, handleOpenNotesEditor, handleOpenBlockCreator, openContentEditor } = uiHandlers;
 
     // Ref to store starting position during drag
     const dragStartPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -104,9 +105,8 @@ export function useCanvasInteractionHandlers(
         }
 
         if (blockData.type === 'text' && isTextBlockContent(blockData.content)) {
-            // TODO: Implement text editing modal opening if needed
-            console.log("Opening notes editor for text block (double-click):", blockData.id);
-            handleOpenNotesEditor(blockData.id, blockData.notes || '');
+            console.log("Opening content editor for text block (double-click):", blockData.id);
+            openContentEditor(blockData.id, blockData.content.text);
         } else if (blockData.type === 'link' && isLinkBlockContent(blockData.content)) {
             const url = blockData.content.url;
             let clickableUrl = url;
@@ -120,7 +120,6 @@ export function useCanvasInteractionHandlers(
                 alert(`Could not open URL: ${clickableUrl}`);
             }
         } else {
-            // Default to opening notes editor for other types or if content check fails
             console.log("Opening notes editor for block type (double-click):", blockData.type);
             handleOpenNotesEditor(blockData.id, blockData.notes || '');
         }

@@ -10,6 +10,7 @@ import { CanvasHeader } from '../components/CanvasHeader';
 import { CanvasWorkspace } from '../components/CanvasWorkspace';
 import { NotesEditModal } from '../components/NotesEditModal';
 import { BlockCreationModal } from '../components/BlockCreationModal';
+import { TextContentEditModal } from '../components/TextContentEditModal';
 
 // API, Utils, Constants, Hooks
 import { Block, CanvasData } from '../lib/api';
@@ -56,6 +57,10 @@ function CanvasViewPage() {
     editingNotes,
     handleOpenNotesEditor,
     handleCloseNotesEditor,
+    editingContentBlockId,
+    editingContent,
+    openContentEditor,
+    closeContentEditor,
     isCreatingBlockInput,
     newBlockPosition, // Position set by handleOpenBlockCreator
     handleOpenBlockCreator,
@@ -82,7 +87,8 @@ function CanvasViewPage() {
     {
       setSelectedNode,
       handleOpenNotesEditor,
-      handleOpenBlockCreator, // Pass the function to open the creator modal
+      handleOpenBlockCreator,
+      openContentEditor, // Pass content editor open function
     }
   );
 
@@ -254,6 +260,18 @@ function CanvasViewPage() {
              Block created. <button onClick={() => mutations.performUndoBlockCreation(undoBlockId)}>Undo</button>
          </div>
        )}
+
+      {editingContentBlockId && (
+        <TextContentEditModal
+          initialContent={editingContent}
+          onSave={(newContent) => {
+            if (!editingContentBlockId) return;
+            mutations.performUpdateBlockContent({ blockId: editingContentBlockId, content: { text: newContent } });
+            closeContentEditor();
+          }}
+          onCancel={closeContentEditor}
+        />
+      )}
     </div>
   );
 }
