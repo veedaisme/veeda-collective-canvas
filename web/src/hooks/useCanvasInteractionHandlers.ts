@@ -85,7 +85,10 @@ export function useCanvasInteractionHandlers(
         }, 250); // Adjust delay as needed (e.g., 200-300ms)
     }, [setSelectedNode]);
 
-    const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    const handleNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
+        // Stop event propagation so pane double-click doesn't fire
+        event.stopPropagation();
+
         // Clear the single click timeout if it exists
         if (clickTimeoutRef.current) {
             clearTimeout(clickTimeoutRef.current);
