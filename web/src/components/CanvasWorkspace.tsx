@@ -20,10 +20,13 @@ import StyledBlockNode from './StyledBlockNode';
 const UNDO_GRACE_PERIOD_MS = 30 * 1000;
 
 // Define the node types object
+import TextBlockNode from './TextBlockNode';
+import LinkBlockNode from './LinkBlockNode';
+
 const nodeTypes = {
     styledBlockNode: StyledBlockNode,
-    // linkNode: LinkNode,
-    // default: DefaultNode,
+    textBlockNode: TextBlockNode,
+    linkBlockNode: LinkBlockNode,
 };
 
 // --- Helper: Map API Block to ReactFlow Node ---

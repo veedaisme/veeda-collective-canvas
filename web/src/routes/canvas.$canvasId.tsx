@@ -50,21 +50,19 @@ const mapBlockToNode = (block: Block): Node => {
         label = block.content.url;
     }
 
-    // Always use the StyledBlockNode type now
-    const nodeType = 'styledBlockNode';
+    let nodeType = 'styledBlockNode';
+    if (block.type === 'text') nodeType = 'textBlockNode';
+    else if (block.type === 'link') nodeType = 'linkBlockNode';
 
     return {
         id: block.id,
-        type: nodeType, // Use the new styled node type for all blocks
+        type: nodeType,
         position: block.position,
-        // Pass data expected by StyledBlockNode
         data: {
-            label: label, // Pass determined label
+            label,
             notes: block.notes,
-            rawBlock: block // Pass the full block data
+            rawBlock: block,
         },
-        // Optionally define width/height based on content or type?
-        // style: { width: 250 }, 
     }
 };
 
