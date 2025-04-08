@@ -121,3 +121,12 @@
     *   Implemented double-click on empty canvas background to open the block creation modal.
     *   New block is created precisely at the double-clicked position.
     *   Disabled default React Flow zoom on double-click to enable this feature.
+
+*   **Milestone:** Inline Link Preview for Link-Type Blocks
+    *   Updated `StyledBlockNode` component to display a link preview **below the main content and above the footnote (notes)**.
+    *   The preview fetches metadata (title, favicon) for the URL and displays it as a clickable card.
+    *   Clicking the preview opens the link in a new browser tab (`target="_blank"` with `rel="noopener noreferrer"`).
+    *   Implemented client-side metadata fetching using `useEffect` and `fetch`.
+    *   Handled loading and error states gracefully within the preview area.
+    *   Styled the preview for visual clarity and hover feedback, consistent with existing UI.
+    *   This replaces the previous plan to open the URL on double-click, providing a more intuitive and discoverable interaction.

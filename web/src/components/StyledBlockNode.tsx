@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Block, BlockContent, TextBlockContent, LinkBlockContent } from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -36,6 +36,121 @@ const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }
         displayContent = <p className={styles.contentFallback}>({type} block)</p>;
     }
 
+    const [linkMeta, setLinkMeta] = useState<{
+        title?: string;
+        description?: string;
+        favicon?: string;
+        image?: string;
+        hostname?: string;
+    } | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let errorTimeout: NodeJS.Timeout | null = null;
+
+        if (type === 'link' && isLinkBlockContent(content) && content.url) {
+            const url = content.url.startsWith('http') ? content.url : `https://${content.url}`;
+            setLoading(true);
+            setError(null);
+            setLinkMeta(null);
+
+            const isTwitter = url.includes('twitter.com');
+
+            if (isTwitter) {
+                const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`;
+                fetch(oembedUrl)
+                    .then(async (res) => {
+                        if (!res.ok) throw new Error('oEmbed fetch failed');
+                        const data = await res.json();
+                        setLinkMeta({
+                            title: data.author_name,
+                            description: data.html.replace(/<[^>]+>/g, '').slice(0, 200),
+                            image: undefined, // Twitter oEmbed doesn't provide image URL
+                            favicon: undefined,
+                            hostname: 'twitter.com',
+                        });
+                    })
+                    .catch((err) => {
+                        console.error('Error fetching Twitter oEmbed:', err);
+                        setError('Failed to load preview');
+                        errorTimeout = setTimeout(() => {
+                            setError(null);
+                        }, 3000);
+                    })
+                    .finally(() => setLoading(false));
+            } else {
+                fetch(url)
+                    .then(async (res) => {
+                        const text = await res.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(text, 'text/html');
+
+                        const hostname = (() => {
+                            try {
+                                return new URL(url).hostname;
+                            } catch {
+                                return url;
+                            }
+                        })();
+
+                        const getMeta = (property: string) =>
+                            doc.querySelector(`meta[property='${property}']`)?.getAttribute('content') ||
+                            doc.querySelector(`meta[name='${property}']`)?.getAttribute('content') ||
+                            '';
+
+                        const title =
+                            getMeta('og:title') ||
+                            doc.querySelector('title')?.innerText ||
+                            hostname;
+
+                        const description =
+                            getMeta('og:description') ||
+                            getMeta('description') ||
+                            '';
+
+                        let imageUrl = getMeta('og:image') || '';
+                        if (imageUrl && !imageUrl.startsWith('http')) {
+                            try {
+                                imageUrl = new URL(imageUrl, url).href;
+                            } catch {}
+                        }
+
+                        let faviconUrl = '';
+                        const iconLink = doc.querySelector('link[rel~="icon"]') as HTMLLinkElement | null;
+                        if (iconLink) {
+                            faviconUrl = iconLink.href;
+                            if (faviconUrl && !faviconUrl.startsWith('http')) {
+                                try {
+                                    faviconUrl = new URL(faviconUrl, url).href;
+                                } catch {}
+                            }
+                        }
+
+                        setLinkMeta({
+                            title,
+                            description,
+                            favicon: faviconUrl,
+                            image: imageUrl,
+                            hostname,
+                        });
+                    })
+                    .catch((err) => {
+                        console.error('Error fetching link metadata:', err);
+                        setError('Failed to load preview');
+                        errorTimeout = setTimeout(() => {
+                            setError(null);
+                        }, 3000);
+                    })
+                    .finally(() => setLoading(false));
+            }
+        }
+
+        return () => {
+            if (errorTimeout) clearTimeout(errorTimeout);
+        };
+    }, [type, content]);
+
     const cardClassName = `${styles.cardBase} ${selected ? styles.selected : ''}`;
 
     return (
@@ -45,6 +160,31 @@ const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }
             <CardContent className={styles.cardContent}>
                 {/* Display main content */}
                 {displayContent}
+
+                {/* Link preview for link blocks */}
+                {type === 'link' && isLinkBlockContent(content) && content.url && (
+                    <div className={styles.linkPreview}>
+                        {loading && <p>Loading preview...</p>}
+                        {error && <p className={styles.previewError}>{error}</p>}
+                        {!loading && !error && linkMeta && (
+                            <a
+                                href={content.url.startsWith('http') ? content.url : `https://${content.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.previewLinkRich}
+                            >
+                                {linkMeta.image && (
+                                    <img src={linkMeta.image} alt="preview" className={styles.previewImage} />
+                                )}
+                                <div className={styles.previewText}>
+                                    {linkMeta.description && (
+                                        <div className={styles.previewDescription}>{linkMeta.description}</div>
+                                    )}
+                                </div>
+                            </a>
+                        )}
+                    </div>
+                )}
 
                 {/* Display notes as footnote if they exist */}
                 {notes && (
@@ -58,4 +198,4 @@ const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }
 };
 
 // Use React.memo for performance optimization with React Flow
-export default React.memo(StyledBlockNode); 
+export default React.memo(StyledBlockNode);
