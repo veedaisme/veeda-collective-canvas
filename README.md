@@ -102,6 +102,31 @@ This project aims to provide a real-time collaborative space where users can cre
 3.  **Access the Application:**
     *   Open your browser and navigate to the URL provided by the Vite development server (usually `http://localhost:5173`).
 
+### Running with Docker Compose (Alternative)
+
+If you have Docker and Docker Compose installed, you can run both the backend and frontend services using a single command from the project's root directory:
+
+1.  **Prerequisites:**
+    *   Docker Desktop or Docker Engine & Docker Compose installed.
+    *   Ensure the `.env` file exists in the `backend` directory as described in the **Backend Setup** section (Docker Compose will use this).
+
+2.  **Start the Services:**
+    *   From the project root directory (`veedaspace`):
+    ```bash
+    docker compose up --build -d
+    ```
+    *   `--build`: Builds the web image if it doesn't exist or if the `web/Dockerfile` or related files have changed.
+    *   `-d`: Runs the containers in detached mode (background).
+
+3.  **Access the Application:**
+    *   Open your browser and navigate to `http://localhost:5173`.
+
+4.  **Stopping the Services:**
+    *   From the project root directory:
+    ```bash
+    docker compose down
+    ```
+
 ## Scripts
 
 *   `backend/`:
