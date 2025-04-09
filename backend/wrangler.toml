@@ -11,12 +11,12 @@ compatibility_date = "2024-04-05" # Keep this or update to a newer date if neede
 
 # --- VERY IMPORTANT: Enable Deno Compatibility ---
 # This tells the Cloudflare Workers runtime to use the Deno runtime layer.
-compatibility_flags = [ "deno" ]
+compatibility_flags = [ "deno", "nodejs_compat" ]
 
 # --- Node.js Compatibility (Optional) ---
 # Add this if any *npm* dependencies specifically require Node.js built-in modules
 # (e.g., 'crypto', 'fs', 'path'). Test if needed. Supabase client might benefit.
-node_compat = true
+# node_compat = true
 
 # --- Secrets ---
 # Runtime secrets MUST be configured using the Cloudflare dashboard or Wrangler CLI.
