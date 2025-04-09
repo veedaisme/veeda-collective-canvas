@@ -59,8 +59,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Wrangler CLI
-        run: npm install -g wrangler@latest
+      - name: Setup Cloudflare Wrangler CLI
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Important: Runtime secrets (SUPABASE_SERVICE_ROLE_KEY, etc.)
       # must be configured in the Cloudflare Worker settings beforehand
