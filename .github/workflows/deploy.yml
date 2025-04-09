@@ -67,6 +67,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 2.2.8
+
       - name: Deploy Worker with Denoflare
         run: deno run -A --unstable -r https://denoflare.dev/cli/push.ts veeda-backend-worker
         working-directory: ./backend
