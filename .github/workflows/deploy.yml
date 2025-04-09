@@ -72,8 +72,11 @@ jobs:
         with:
           deno-version: 2.2.8
 
+      - name: Install Denoflare CLI
+        run: deno install --unstable-worker-options --allow-read --allow-net --allow-env --allow-run --name denoflare --force https://raw.githubusercontent.com/skymethod/denoflare/v0.6.0/cli/cli.ts
+
       - name: Deploy Worker with Denoflare
-        run: deno run -A --unstable -r https://denoflare.dev/cli/push.ts veeda-backend-worker
+        run: denoflare push veeda-backend-worker
         working-directory: ./backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
