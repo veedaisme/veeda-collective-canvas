@@ -134,7 +134,7 @@ const app = new Hono();
 // --- Configuration ---
 // Define allowed origins (include your production frontend and local dev frontend)
 const ALLOWED_ORIGINS = [
-    'https://app.canvas.com',     // Your production frontend
+    'https://app.veeda.space',     // Your production frontend
     'http://localhost:5173',   // Your local dev frontend (adjust port if needed)
     // Add any other trusted origins like preview deployment URLs if necessary
   ];
