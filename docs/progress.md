@@ -1,5 +1,14 @@
 # Project Progress
 
+## April 10, 2025
+
+*   **Milestone:** Enabled CORS Middleware for Local Development Only.
+    *   Modified `backend/dev.ts` to import and apply `@hono/middleware.ts` CORS middleware.
+    *   Configured to allow cross-origin requests from `http://localhost:5173` with appropriate headers and methods.
+    *   This setup enables smooth frontend-backend integration during local development.
+    *   The production server (`backend/main.ts`) remains unchanged, maintaining stricter CORS policies.
+    *   This separation ensures permissive CORS in dev without affecting production security.
+
 ## April 9, 2025
 
 *   **Milestone:** Migrated Backend Deployment to Denoflare CLI.

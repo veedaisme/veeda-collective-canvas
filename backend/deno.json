@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "dev": "deno run --config deno.json --allow-net --allow-env --allow-read --watch --env-file=.env main.ts"
+    "dev": "deno run --config deno.json --allow-net --allow-env --allow-read --watch --env-file=.env dev.ts"
   },
   "imports": {
     "@hono/": "https://deno.land/x/hono@v4.2.9/",

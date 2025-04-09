@@ -30,7 +30,7 @@ const mockContext = {
 };
 
 // Helper to call query resolvers
-const resolveQuery = (fieldName: keyof typeof resolvers.Query, args: any = {}) => {
+const resolveQuery = (fieldName: keyof typeof resolvers.Query, args: Record<string, unknown> = {}) => {
     const resolverFn = resolvers.Query[fieldName];
     if (!resolverFn) throw new Error(`Resolver Query.${fieldName} not found`);
     // deno-lint-ignore no-explicit-any
@@ -38,7 +38,7 @@ const resolveQuery = (fieldName: keyof typeof resolvers.Query, args: any = {}) =
 };
 
 // Helper to call mutation resolvers
-const resolveMutation = (fieldName: keyof typeof resolvers.Mutation, args: any = {}) => {
+const resolveMutation = (fieldName: keyof typeof resolvers.Mutation, args: Record<string, unknown> = {}) => {
     const resolverFn = resolvers.Mutation[fieldName];
     if (!resolverFn) throw new Error(`Resolver Mutation.${fieldName} not found`);
      // deno-lint-ignore no-explicit-any
@@ -476,4 +476,4 @@ describe("GraphQL Resolvers (resolvers.ts)", () => {
             // (e.g., ensure user owns the canvas the connection belongs to)
         });
     });
-}); 
+});

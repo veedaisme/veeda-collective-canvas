@@ -6,6 +6,7 @@ on:
       - main # Trigger deployment on pushes to the main branch
 
 jobs:
+  # deploy_frontend job remains the same...
   deploy_frontend:
     name: Deploy Frontend to Cloudflare Pages
     runs-on: ubuntu-latest
@@ -36,25 +37,22 @@ jobs:
         working-directory: ./web
 
       - name: Build Frontend
-        # Inject the production GraphQL endpoint URL from GitHub secrets during the build
         run: VITE_GRAPHQL_ENDPOINT=${{ secrets.CLOUDFLARE_WORKER_URL }} npm run build
         working-directory: ./web
         env:
-           # Pass Supabase keys needed for the build process from secrets
            VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
            VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Cloudflare Pages
-        # This action handles uploading the build output to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: veeda-frontend # Replace with your actual Cloudflare Pages project name
           directory: web/dist # The directory containing the built frontend assets
-          # Optional: Enables commit status updates and deployment previews on PRs
-          # gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          # gitHubToken: ${{ secrets.GITHUB_TOKEN }} # Optional
 
+  # --- deploy_backend Job (Updated for Wrangler) ---
   deploy_backend:
     name: Deploy Backend to Cloudflare Workers
     runs-on: ubuntu-latest
@@ -63,6 +61,12 @@ jobs:
     permissions:
       contents: read
       deployments: write # Required for cloudflare/wrangler-action
+
+    # --- Set working directory default ---
+    defaults:
+      run:
+        working-directory: ./backend # Execute steps relative to the backend dir
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,35 +74,45 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: 2.2.8
+          deno-version: v2.2.8
 
-      - name: Install Denoflare CLI
-        run: deno install --allow-import --global --unstable-worker-options --allow-read --allow-net --allow-env --allow-run --name denoflare --force https://raw.githubusercontent.com/skymethod/denoflare/v0.6.0/cli/cli.ts
+      # --- Optional but Recommended: Add Linting/Testing ---
+      - name: Run Deno Lint
+        run: deno lint
 
-      - name: Deploy Worker with Denoflare
-        run: denoflare push veeda-backend-worker --config denoflare.json --account-id $CLOUDFLARE_ACCOUNT_ID --api-token $CLOUDFLARE_API_TOKEN --binding SUPABASE_URL=$SUPABASE_URL --binding SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY --binding SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-        working-directory: ./backend
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # --- Deploy using Wrangler Action ---
+      - name: Deploy Worker with Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          # Required: Cloudflare API Token from GitHub Secrets
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Required: Cloudflare Account ID from GitHub Secrets
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Tell Wrangler where your wrangler.toml and code is
+          workingDirectory: ./backend
+          # Command to run (uses wrangler.toml for config)
+          # Add --minify for smaller worker size
+          # Add --env <name> if using environments from wrangler.toml
+          command: deploy --env production --minify
+          # Optional: Add package manager if needed for wrangler install (usually not needed)
+          # packageManager: npm
 
 # --- Required GitHub Secrets ---
 # You need to configure the following secrets in your GitHub repository settings:
+# For *BOTH* Frontend and Backend Deployment Steps:
 # - CLOUDFLARE_API_TOKEN: Cloudflare API Token with Worker and Pages permissions.
-# - SUPABASE_URL: Your Supabase project URL (for backend).
-# - SUPABASE_ANON_KEY: Your Supabase project anon key (for backend).
-# - SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key (for backend).
 # - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare Account ID.
-# - CLOUDFLARE_WORKER_URL: The URL of your deployed backend worker (e.g., https://veeda-backend-worker.<your-account>.workers.dev). Get this after the first deploy.
-# - VITE_SUPABASE_URL: Your Supabase project URL.
-# - VITE_SUPABASE_ANON_KEY: Your Supabase project anon key.
-# - GITHUB_TOKEN: Automatically provided by GitHub Actions (if needed for pages-action features).
+#
+# For Frontend Build Step ONLY:
+# - CLOUDFLARE_WORKER_URL: The URL of your deployed backend worker (e.g., https://veeda-backend-worker.<your-account>.workers.dev).
+# - VITE_SUPABASE_URL: Your Supabase project URL (for frontend build).
+# - VITE_SUPABASE_ANON_KEY: Your Supabase project anon key (for frontend build).
+#
+# Secrets previously needed in backend `env:` (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
+# are NO LONGER used directly by the backend deploy step. They must be set in Cloudflare.
 
-# --- Required Cloudflare Worker Secrets ---
-# Configure these in your Cloudflare Worker settings (Dashboard or `wrangler secret put`):
+# --- Required Cloudflare Worker Secrets (SET THESE IN CLOUDFLARE) ---
+# Use `wrangler secret put` or the Cloudflare Dashboard to set these for your Worker Runtime:
 # - SUPABASE_URL
 # - SUPABASE_ANON_KEY
 # - SUPABASE_SERVICE_ROLE_KEY

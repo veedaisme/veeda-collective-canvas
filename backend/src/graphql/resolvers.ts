@@ -1,17 +1,14 @@
-import type { StringValueNode } from "https://esm.sh/graphql@16.8.1";
 import {
     getCanvasesByUserId, getCanvasById, createCanvasRecord, updateCanvasRecord,
     getBlocksByCanvasId, getBlockById, createBlockRecord,
     updateBlockRecordPosition, updateBlockRecordContent,
     updateBlockRecordNotes,
-    isWithinUndoGracePeriod,
     type CanvasRecord, type BlockRecord, type ConnectionRecord,
     createConnectionRecord, deleteConnectionRecord,
     listConnectionsByCanvas
 } from '../data/db.ts'; // Adjusted import path
 import { GraphQLError } from 'https://esm.sh/graphql@16.8.1'; // Correct CDN import
 import { DateTimeResolver, JSONResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Use correct case: JSONResolver
-import type { supabase, supabaseAdmin } from "../lib/supabaseClient.ts";
 import type { User as SupabaseUser } from '@supabase/supabase-js'; // Rename imported User
 import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 
@@ -116,7 +113,7 @@ export const resolvers = {
     },
 
     // createBlock resolver
-    createBlock: async (_parent: unknown, args: { canvasId: string; type: string; position: PositionInput; content?: any }, context: ResolverContext) => {
+    createBlock: async (_parent: unknown, args: { canvasId: string; type: string; position: PositionInput; content?: unknown }, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
 
         // Basic validation - position structure is now validated by GraphQL
@@ -134,12 +131,18 @@ export const resolvers = {
             const newBlock = await createBlockRecord({ ...args, userId }, context);
             // Map internal record to GraphQL type if needed
             return newBlock;
-        } catch (error: any) {
-            console.error(`[Resolver] Error creating block: ${error.message}`);
-            // Check for specific DB errors if needed (e.g., canvas FK violation)
-            throw new GraphQLError(`Failed to create block: ${error.message}`, {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR' } // Or more specific
-            });
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`[Resolver] Error creating block: ${error.message}`);
+                throw new GraphQLError(`Failed to create block: ${error.message}`, {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
+            } else {
+                console.error(`[Resolver] Unknown error creating block:`, error);
+                throw new GraphQLError(`Failed to create block: Unknown error`, {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
+            }
         }
     },
 
@@ -193,7 +196,7 @@ export const resolvers = {
     },
 
     // updateBlockContent resolver
-    updateBlockContent: async (_parent: unknown, { blockId, content }: { blockId: string; content: any }, context: ResolverContext) => {
+    updateBlockContent: async (_parent: unknown, { blockId, content }: { blockId: string; content: unknown }, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
 
         // Basic content validation
@@ -264,17 +267,23 @@ export const resolvers = {
             const newConnection = await createConnectionRecord(args.canvasId, args.sourceBlockId, args.targetBlockId, args.sourceHandle, args.targetHandle, context);
             // Map internal record to GraphQL type if needed
             return newConnection;
-        } catch (error: any) { // Type error as any
-            console.error("[Resolver] Error creating connection:", error);
-            // Check for specific DB errors (e.g., FK violation) and provide better messages
-            if (error.message.includes('violates foreign key constraint')) {
-                 throw new GraphQLError('Failed to create connection: Source or target block not found.', {
-                      extensions: { code: 'BAD_USER_INPUT' } // Or NOT_FOUND
-                 });
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error("[Resolver] Error creating connection:", error);
+                if (error.message.includes('violates foreign key constraint')) {
+                    throw new GraphQLError('Failed to create connection: Source or target block not found.', {
+                        extensions: { code: 'BAD_USER_INPUT' }
+                    });
+                }
+                throw new GraphQLError(`Failed to create connection: ${error.message}`, {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
+            } else {
+                console.error("[Resolver] Unknown error creating connection:", error);
+                throw new GraphQLError(`Failed to create connection: Unknown error`, {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
             }
-            throw new GraphQLError(`Failed to create connection: ${error.message}`, {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR' }
-            });
         }
     },
     deleteConnection: async (_parent: unknown, { connectionId }: { connectionId: string }, context: ResolverContext): Promise<boolean> => {
@@ -296,21 +305,27 @@ export const resolvers = {
                 });
             }
             return true;
-        } catch (error: any) { // Type error as any
-            console.error("[Resolver] Error deleting connection:", error);
-             if (error instanceof GraphQLError) { // Propagate specific errors
+        } catch (error: unknown) {
+            if (error instanceof GraphQLError) {
                 throw error;
+            } else if (error instanceof Error) {
+                console.error("[Resolver] Error deleting connection:", error);
+                throw new GraphQLError(`Failed to delete connection: ${error.message}`, {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
+            } else {
+                console.error("[Resolver] Unknown error deleting connection:", error);
+                throw new GraphQLError(`Failed to delete connection: Unknown error`, {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
             }
-            throw new GraphQLError(`Failed to delete connection: ${error.message}`, {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR' }
-            });
         }
     },
   },
   // Resolver for Canvas.blocks field
   Canvas: {
       blocks: async (parent: CanvasRecord, _args: unknown, context: ResolverContext): Promise<BlockRecord[]> => {
-          const userId = getUserIdFromContext(context); // Check auth
+          const _userId = getUserIdFromContext(context); // Check auth
           // Parent here is the resolved Canvas object
           console.log(`Resolving: Canvas.blocks for canvas ID ${parent.id}`);
           // RLS ensures we only get blocks for canvases the user can access
@@ -321,7 +336,7 @@ export const resolvers = {
       },
        // Resolver for Canvas.connections field
        connections: async (parent: CanvasRecord, _args: unknown, context: ResolverContext): Promise<ConnectionRecord[]> => {
-            const userId = getUserIdFromContext(context); // Check auth
+            const _userId = getUserIdFromContext(context); // Check auth
             console.log(`Resolving: Canvas.connections for canvas ID ${parent.id}`);
             // RLS ensures we only get connections for canvases the user can access
             // Pass context
@@ -338,4 +353,4 @@ export const resolvers = {
     // Connection: {
     //    ...
     // }
-}; 
+};

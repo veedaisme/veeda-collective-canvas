@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "veeda-backend-worker": {
-      "main": "main.ts"
-    }
-  }
-}

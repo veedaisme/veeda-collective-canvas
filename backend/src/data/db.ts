@@ -1,5 +1,5 @@
 // src/data/db.ts - Supabase data access functions
-import { supabase, supabaseAdmin } from '../lib/supabaseClient.ts';
+import { supabase as _supabase, supabaseAdmin } from '../lib/supabaseClient.ts';
 import { supabase as defaultSupabaseClient } from '../lib/supabaseClient.ts'; // Rename global client
 import type { ResolverContext } from '../graphql/resolvers.ts';
 // TODO: Ideally, import the generated Database type directly if possible
@@ -57,7 +57,7 @@ export interface BlockRecord {
     canvasId: string; // Mapped from canvas_id
     userId: string; // Mapped from user_id
     type: string;
-    content: any; // JSONB
+    content: unknown; // JSONB
     position: { x: number; y: number }; // Mapped from position_x, position_y
     size: { width: number; height: number }; // Mapped from width, height
     createdAt: Date; // Mapped from created_at
@@ -271,7 +271,7 @@ export const createBlockRecord = async (data: {
     userId: string;
     type: string;
     position: { x: number; y: number };
-    content?: any;
+    content?: unknown;
     // Optional size, might default in DB or here
     size?: { width: number; height: number };
 }, context?: ResolverContext): Promise<BlockRecord> => {
@@ -350,7 +350,7 @@ export const updateBlockRecordPosition = async (id: string, position: { x: numbe
 };
 
 // Accept context
-export const updateBlockRecordContent = async (id: string, content: any, context?: ResolverContext): Promise<BlockRecord | null> => {
+export const updateBlockRecordContent = async (id: string, content: unknown, context?: ResolverContext): Promise<BlockRecord | null> => {
     console.log(`[DB] Updating content for block ${id}`);
     const db = context?.supabase || defaultSupabaseClient;
     console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateBlockRecordContent`);
@@ -539,4 +539,4 @@ export const listConnectionsByCanvas = async (canvasId: string, context?: Resolv
 //     connectionsStore.clear();
 //     nextCanvasId = 1; // Reset counters if needed
 //     nextBlockId = 1;
-// }; 
+// };
