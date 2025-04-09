@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Block, BlockContent, TextBlockContent, LinkBlockContent } from '../lib/api';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import styles from './StyledBlockNode.module.css';
 
 // Fix any types and restore usage
@@ -22,7 +22,7 @@ interface StyledNodeData {
 }
 
 const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }) => {
-    const { label, notes, rawBlock } = data; // Label might be unused now
+    const { notes, rawBlock } = data;
     const { type, content } = rawBlock;
 
     // Determine content to display
@@ -113,7 +113,9 @@ const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }
                         if (imageUrl && !imageUrl.startsWith('http')) {
                             try {
                                 imageUrl = new URL(imageUrl, url).href;
-                            } catch {}
+                            } catch {
+                                // ignore invalid URL resolution
+                            }
                         }
 
                         let faviconUrl = '';
@@ -123,7 +125,9 @@ const StyledBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }
                             if (faviconUrl && !faviconUrl.startsWith('http')) {
                                 try {
                                     faviconUrl = new URL(faviconUrl, url).href;
-                                } catch {}
+                                } catch {
+                                    // ignore invalid URL resolution
+                                }
                             }
                         }
 

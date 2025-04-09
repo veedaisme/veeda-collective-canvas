@@ -189,3 +189,16 @@
     *   Created `constants.ts` for query keys and magic numbers.
     *   Simplified the main `CanvasViewPage` component to use these hooks, improving modularity and readability.
     *   Fixed single/double-click handling conflict on nodes.
+
+## April 9, 2025 (cont.)
+
+*   **Milestone:** Improved Frontend Build Process.
+    *   Updated `web/package.json`:
+        *   Added `typecheck` script (`tsc --noEmit`).
+        *   Modified `build` script to enforce linting and type checking before compiling and bundling.
+    *   Enhanced Vite configuration:
+        *   Integrated `rollup-plugin-visualizer` to generate interactive bundle analysis reports after build.
+    *   Improved CI/CD pipeline (`.github/workflows/deploy.yml`):
+        *   Added separate lint and type check steps before the build step to fail early on errors.
+    *   Successfully ran the updated build process locally with dummy environment variables.
+    *   Bundle visualizer report opened automatically post-build for inspection.

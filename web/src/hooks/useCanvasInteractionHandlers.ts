@@ -1,6 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import { Node, Edge, Connection } from 'reactflow';
-import { Block, LinkBlockContent, TextBlockContent } from '../lib/api';
+import { Block } from '../lib/api';
 import { isLinkBlockContent, isTextBlockContent } from '../lib/canvasUtils';
 import { NODE_DRAG_THRESHOLD } from '../lib/constants';
 

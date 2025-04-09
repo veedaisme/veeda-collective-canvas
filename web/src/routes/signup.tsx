@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useNavigate, createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,6 @@ export const Route = createFileRoute('/signup')({
 });
 
 export function SignupPage() {
-    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -43,9 +42,16 @@ export function SignupPage() {
             setPassword('');
             // Don't redirect immediately, wait for confirmation
             // navigate({ to: '/login' });
-        } catch (err: any) {
-            console.error('Signup error:', err.message);
-            setError(err.error_description || err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                console.error('Signup error:', err.message);
+                setError(err.message);
+            } else if (typeof err === 'object' && err !== null && 'error_description' in err && typeof (err as any).error_description === 'string') {
+                setError((err as any).error_description);
+            } else {
+                console.error('Signup error:', err);
+                setError(String(err));
+            }
         } finally {
             setLoading(false);
         }
@@ -109,4 +115,4 @@ export function SignupPage() {
             </Card>
         </div>
     );
-} 
+}

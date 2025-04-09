@@ -1,6 +1,5 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import React, { useCallback } from 'react';
-import { Node } from 'reactflow'; // REMOVED useReactFlow import
 import 'reactflow/dist/style.css';
 
 // UI Components
@@ -13,7 +12,7 @@ import { BlockCreationModal } from '../components/BlockCreationModal';
 import { TextContentEditModal } from '../components/TextContentEditModal';
 
 // API, Utils, Constants, Hooks
-import { Block, CanvasData } from '../lib/api';
+import { Block } from '../lib/api';
 import { supabase } from '../lib/supabaseClient';
 import { isUrl } from '../lib/utils';
 import { isLinkBlockContent, isTextBlockContent } from '../lib/canvasUtils';
@@ -161,7 +160,7 @@ function CanvasViewPage() {
       }
       try {
           return <pre className={styles.sheetJsonContent}>{JSON.stringify(blockData.content, null, 2)}</pre>;
-      } catch (_e) {
+      } catch {
           return '(Cannot display content)';
       }
     };

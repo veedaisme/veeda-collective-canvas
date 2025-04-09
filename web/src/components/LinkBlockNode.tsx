@@ -95,7 +95,9 @@ const LinkBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }) 
                         if (imageUrl && !imageUrl.startsWith('http')) {
                             try {
                                 imageUrl = new URL(imageUrl, url).href;
-                            } catch {}
+                            } catch {
+                                // ignore invalid URL resolution
+                            }
                         }
 
                         let faviconUrl = '';
@@ -105,7 +107,9 @@ const LinkBlockNode: React.FC<NodeProps<StyledNodeData>> = ({ data, selected }) 
                             if (faviconUrl && !faviconUrl.startsWith('http')) {
                                 try {
                                     faviconUrl = new URL(faviconUrl, url).href;
-                                } catch {}
+                                } catch {
+                                    // ignore invalid URL resolution
+                                }
                             }
                         }
 

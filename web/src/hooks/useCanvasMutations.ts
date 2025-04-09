@@ -11,7 +11,6 @@ import {
     Canvas as CanvasBase, // Rename to avoid conflict
     CanvasData,
     Connection as ApiConnection,
-    Block,
 } from '../lib/api';
 import { queryKeys } from '../lib/constants';
 import { Edge, addEdge } from 'reactflow'; // Import addEdge for optimistic updates

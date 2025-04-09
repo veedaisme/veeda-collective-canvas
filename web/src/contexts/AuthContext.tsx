@@ -45,8 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             await supabase.auth.signOut();
             // Auth listener will handle setting session/user to null
-        } catch (error: any) { // Type error as any
-             console.error("Sign out error:", error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error("Sign out error:", error.message);
+            } else {
+                console.error("Sign out error:", error);
+            }
         } finally {
              setLoading(false); // Reset loading state
         }
@@ -72,4 +76,4 @@ export const useAuth = () => {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-}; 
+};

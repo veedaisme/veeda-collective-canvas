@@ -1,15 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import {
     Edge,
     Node,
     useNodesState,
     useEdgesState,
-    addEdge as rfAddEdge, // Rename to avoid conflict with local addEdge
-    OnNodesChange,
-    OnEdgesChange,
-    Connection,
 } from 'reactflow';
-import { CanvasData, Connection as ApiConnection } from '../lib/api'; // Assuming Connection is exported from api
+import { CanvasData } from '../lib/api';
 import { mapBlockToNode, mapConnectionToEdge } from '../lib/canvasUtils';
 
 /**

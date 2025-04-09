@@ -34,9 +34,16 @@ export function LoginPage() {
             // Navigate to dashboard or home page after login
             // TODO: Check for redirect search param
             navigate({ to: '/' });
-        } catch (err: any) {
-            console.error('Login error:', err.message);
-            setError(err.error_description || err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                console.error('Login error:', err.message);
+                setError(err.message);
+            } else if (typeof err === 'object' && err !== null && 'error_description' in err && typeof (err as any).error_description === 'string') {
+                setError((err as any).error_description);
+            } else {
+                console.error('Login error:', err);
+                setError(String(err));
+            }
         } finally {
             setLoading(false);
         }
@@ -95,4 +102,4 @@ export function LoginPage() {
             </Card>
         </div>
     );
-} 
+}
