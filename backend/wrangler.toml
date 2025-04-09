@@ -1,0 +1,49 @@
+# wrangler.toml
+# Configuration for the Cloudflare Worker deployment for the Veeda backend.
+
+# A unique name for your Worker. This will form part of its URL.
+# Replace '<your-unique-name>' with something specific to your project/account.
+name = "veeda-backend-worker"
+
+# The main entry point for your Worker code.
+main = "main.ts"
+
+# Specifies the compatibility date for the Workers runtime.
+# Use a recent date to leverage the latest features and behaviors.
+# Check Cloudflare docs for the latest recommended date if needed.
+compatibility_date = "2024-03-18"
+
+# Specifies that this Worker uses the Deno runtime.
+[deno]
+
+# --- Secrets ---
+# Runtime secrets (like SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
+# MUST be configured separately using the Cloudflare dashboard (Workers & Pages -> Your Worker -> Settings -> Variables -> Environment Variables -> Edit variables -> Add Secret)
+# OR via the Wrangler CLI:
+# `wrangler secret put SUPABASE_URL`
+# `wrangler secret put SUPABASE_ANON_KEY`
+# `wrangler secret put SUPABASE_SERVICE_ROLE_KEY`
+#
+# These secrets will be available via `Deno.env.get("SECRET_NAME")` in your Worker code.
+
+# --- Variables ---
+# Non-secret environment variables can be defined here if needed.
+# Avoid putting sensitive keys here.
+# [vars]
+# EXAMPLE_VAR = "example_value"
+
+# --- Build ---
+# For Deno workers, a build command is typically not required as Cloudflare handles the Deno runtime directly.
+# [build]
+# command = ""
+# watch_dir = "src" # Optional: Specify directory to watch if using a build command
+
+# --- Environments ---
+# You can define different settings for environments like 'production', 'staging', etc.
+# [env.production]
+# name = "veeda-backend-worker-prod" # Optional: Override name for production
+# route = { pattern = "api.yourdomain.com/*", custom_domain = true } # Example custom domain routing
+
+# [env.staging]
+# name = "veeda-backend-worker-staging"
+# route = { pattern = "staging-api.yourdomain.com/*", custom_domain = true }

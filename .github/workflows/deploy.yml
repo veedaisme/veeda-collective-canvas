@@ -1,0 +1,89 @@
+name: Deploy VeedaSpace
+
+on:
+  push:
+    branches:
+      - main # Trigger deployment on pushes to the main branch
+
+jobs:
+  deploy_frontend:
+    name: Deploy Frontend to Cloudflare Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write # Required for cloudflare/pages-action
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Match your development environment
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+        working-directory: ./web
+
+      - name: Build Frontend
+        # Inject the production GraphQL endpoint URL from GitHub secrets during the build
+        run: VITE_GRAPHQL_ENDPOINT=${{ secrets.CLOUDFLARE_WORKER_URL }} npm run build
+        working-directory: ./web
+        env:
+           # Pass Supabase keys needed for the build process from secrets
+           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Cloudflare Pages
+        # This action handles uploading the build output to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: veeda-frontend # Replace with your actual Cloudflare Pages project name
+          directory: web/dist # The directory containing the built frontend assets
+          # Optional: Enables commit status updates and deployment previews on PRs
+          # gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy_backend:
+    name: Deploy Backend to Cloudflare Workers
+    runs-on: ubuntu-latest
+    # Optional: Uncomment 'needs' to deploy backend only after frontend succeeds
+    # needs: deploy_frontend
+    permissions:
+      contents: read
+      deployments: write # Required for cloudflare/wrangler-action
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Cloudflare Wrangler CLI
+        # This action sets up the Wrangler tool used for Worker deployments
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Important: Runtime secrets (SUPABASE_SERVICE_ROLE_KEY, etc.)
+      # must be configured in the Cloudflare Worker settings beforehand
+      # (via dashboard or `wrangler secret put`). This step only deploys the code.
+      - name: Deploy Worker
+        run: wrangler deploy
+        working-directory: ./backend # Ensure wrangler runs in the backend directory
+
+# --- Required GitHub Secrets ---
+# You need to configure the following secrets in your GitHub repository settings:
+# - CLOUDFLARE_API_TOKEN: Cloudflare API Token with Worker and Pages permissions.
+# - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare Account ID.
+# - CLOUDFLARE_WORKER_URL: The URL of your deployed backend worker (e.g., https://veeda-backend-worker.<your-account>.workers.dev). Get this after the first deploy.
+# - VITE_SUPABASE_URL: Your Supabase project URL.
+# - VITE_SUPABASE_ANON_KEY: Your Supabase project anon key.
+# - GITHUB_TOKEN: Automatically provided by GitHub Actions (if needed for pages-action features).
+
+# --- Required Cloudflare Worker Secrets ---
+# Configure these in your Cloudflare Worker settings (Dashboard or `wrangler secret put`):
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY

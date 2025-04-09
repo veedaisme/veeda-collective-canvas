@@ -1,5 +1,14 @@
 # Project Progress
 
+## April 9, 2025
+
+*   **Milestone:** Cloudflare Deployment Configuration.
+    *   Analyzed deployment options for the `web` (React/Vite) frontend and `backend` (Deno/Hono) applications.
+    *   Planned strategy: Deploy frontend to Cloudflare Pages and backend to Cloudflare Workers.
+    *   Created `backend/wrangler.toml` configuration file for the Cloudflare Worker.
+    *   Created `.github/workflows/deploy.yml` to automate deployment of both frontend and backend via GitHub Actions upon pushes to the `main` branch.
+    *   Identified necessary GitHub secrets and Cloudflare Worker secrets for the deployment pipeline.
+
 ## April 7, 2025 (cont.)
 
 *   **Milestone:** Improved UI with Shadcn Sheet and Bug Fixes.
