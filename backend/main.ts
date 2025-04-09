@@ -1,15 +1,15 @@
 // backend/main.ts
-import { Hono } from "https://deno.land/x/hono@v4.2.9/mod.ts";
-import { cors } from "https://deno.land/x/hono@v4.2.9/middleware.ts";
-import type { Context as HonoContext, Next } from "https://deno.land/x/hono@v4.2.9/mod.ts";
-import { createYoga } from "https://esm.sh/graphql-yoga@5";
-import { makeExecutableSchema } from "https://esm.sh/@graphql-tools/schema@10";
+import { Hono } from "@hono/mod.ts";
+import { cors } from '@hono/middleware.ts' 
+import type { Context as HonoContext, Next } from "@hono/mod.ts";
+import { createYoga } from "graphql-yoga";
+import { makeExecutableSchema } from "@graphql-tools/schema";
 import { typeDefs } from "./src/graphql/schema.ts";
 import { resolvers } from "./src/graphql/resolvers.ts";
 // Import supabaseAdmin but maybe not the default supabase if creating client per-request
 import { supabaseAdmin } from './src/lib/supabaseClient.ts'; 
-import type { User } from "https://esm.sh/@supabase/supabase-js@2";
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { User } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Define the shape of our GraphQL context
 interface GraphQLContext {

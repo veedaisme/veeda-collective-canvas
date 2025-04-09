@@ -13,6 +13,11 @@ compatibility_date = "2024-04-05" # Keep this or update to a newer date if neede
 # This tells the Cloudflare Workers runtime to use the Deno runtime layer.
 compatibility_flags = [ "nodejs_compat" ]
 
+# --- Node.js Compatibility (Optional) ---
+# Add this if any *npm* dependencies specifically require Node.js built-in modules
+# (e.g., 'crypto', 'fs', 'path'). Test if needed. Supabase client might benefit.
+# node_compat = true
+
 # --- Secrets ---
 # Runtime secrets MUST be configured using the Cloudflare dashboard or Wrangler CLI.
 # DO NOT PUT ACTUAL SECRET VALUES HERE.
@@ -45,8 +50,8 @@ compatibility_flags = [ "nodejs_compat" ]
 name = "veeda-backend-worker" # Explicitly set name for production env
 # Add environment-specific secrets or variables via wrangler commands or dashboard.
 # Example: wrangler secret put DB_PASSWORD --env production
-[env.production.vars]
-ENVIRONMENT = "production"
+# [env.production.vars]
+# ENVIRONMENT = "production"
 
 # [env.staging]
 # name = "veeda-backend-worker-staging"
