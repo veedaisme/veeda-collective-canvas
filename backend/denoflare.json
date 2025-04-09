@@ -1,0 +1,19 @@
+{
+  "profiles": {
+    "default": {
+      "account_id": "${CLOUDFLARE_ACCOUNT_ID}",
+      "api_token": "${CLOUDFLARE_API_TOKEN}"
+    }
+  },
+  "scripts": {
+    "veeda-backend-worker": {
+      "main": "main.ts",
+      "profile": "default",
+      "bindings": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
+        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+      }
+    }
+  }
+}

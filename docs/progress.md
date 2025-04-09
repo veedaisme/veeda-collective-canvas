@@ -2,6 +2,13 @@
 
 ## April 9, 2025
 
+*   **Milestone:** Migrated Backend Deployment to Denoflare CLI.
+    *   Created `backend/denoflare.json` defining Cloudflare account profile and Worker script with environment bindings.
+    *   Updated `.github/workflows/deploy.yml` to replace Wrangler CLI with Denoflare CLI for backend deployment.
+    *   The backend Worker is now deployed via `deno run -A --unstable -r https://denoflare.dev/cli/push.ts veeda-backend-worker`.
+    *   Secrets and environment variables are injected securely via GitHub Actions.
+    *   This simplifies deployment, aligns with Deno ecosystem, and enables local serving with Denoflare CLI.
+
 *   **Milestone:** Supabase Migration Setup.
     *   Introspected existing Supabase project "veeda collective canvas".
     *   Generated initial migration SQL (`backend/src/data/migrations/001_init.sql`) containing schema for `canvases`, `blocks`, and `connections` tables.

@@ -27,6 +27,14 @@ jobs:
         run: npm ci
         working-directory: ./web
 
+      - name: Lint Frontend
+        run: npm run lint
+        working-directory: ./web
+
+      - name: Type Check Frontend
+        run: npm run typecheck
+        working-directory: ./web
+
       - name: Build Frontend
         # Inject the production GraphQL endpoint URL from GitHub secrets during the build
         run: VITE_GRAPHQL_ENDPOINT=${{ secrets.CLOUDFLARE_WORKER_URL }} npm run build
@@ -59,22 +67,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Cloudflare Wrangler CLI
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      # Important: Runtime secrets (SUPABASE_SERVICE_ROLE_KEY, etc.)
-      # must be configured in the Cloudflare Worker settings beforehand
-      # (via dashboard or `wrangler secret put`). This step only deploys the code.
-      - name: Deploy Worker
-        run: wrangler deploy --env production
-        working-directory: ./backend # Ensure wrangler runs in the backend directory
+      - name: Deploy Worker with Denoflare
+        run: deno run -A --unstable -r https://denoflare.dev/cli/push.ts veeda-backend-worker
+        working-directory: ./backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Pass Supabase configuration to the worker deployment
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
