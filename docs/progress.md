@@ -2,6 +2,14 @@
 
 ## April 9, 2025
 
+*   **Milestone:** Supabase Migration Setup.
+    *   Introspected existing Supabase project "veeda collective canvas".
+    *   Generated initial migration SQL (`backend/src/data/migrations/001_init.sql`) containing schema for `canvases`, `blocks`, and `connections` tables.
+    *   Included RLS policies enforcing user ownership on all three tables.
+    *   Migration file enables `uuid-ossp` extension, creates tables with constraints, enables RLS, and adds policies.
+    *   This migration can be used to recreate the schema in new environments or reset the database state.
+    *   Next steps: integrate migration application into backend workflow or CI/CD pipeline.
+
 *   **Milestone:** Cloudflare Deployment Configuration.
     *   Analyzed deployment options for the `web` (React/Vite) frontend and `backend` (Deno/Hono) applications.
     *   Planned strategy: Deploy frontend to Cloudflare Pages and backend to Cloudflare Workers.
