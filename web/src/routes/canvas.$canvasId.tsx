@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import 'reactflow/dist/style.css';
 
 // UI Components
@@ -93,17 +93,6 @@ function CanvasViewPage() {
 
   // --- Specific Handlers using Hook Results ---
 
-  const handleTitleSave = useCallback((newTitle: string) => {
-    if (!canvasId) return;
-    const trimmedTitle = newTitle.trim();
-    if (trimmedTitle) {
-      mutations.performUpdateCanvasTitle({ id: canvasId, title: trimmedTitle });
-    } else {
-      console.error("Canvas title cannot be empty.");
-      alert("Canvas title cannot be empty.");
-    }
-  }, [canvasId, mutations.performUpdateCanvasTitle]);
-
   const handleCreateNewBlock = useCallback(() => {
     // Open the creator modal. Position will be determined on save or by background click.
     // Pass a default position; it will be updated if triggered by background click.
@@ -144,11 +133,17 @@ function CanvasViewPage() {
         edge.source === selectedNode.id || edge.target === selectedNode.id
     );
     const incomingConnections = relatedEdges
-        .filter(edge => edge.target === selectedNode.id)
-        .map(edge => nodes.find(n => n.id === edge.source)?.data?.label || edge.source);
+            .filter(edge => edge.target === selectedNode.id)
+            .map(edge => {
+              const node = nodes.find(n => n.id === edge.source);
+              return (node?.data as { label?: string })?.label || edge.source;
+            });
     const outgoingConnections = relatedEdges
         .filter(edge => edge.source === selectedNode.id)
-        .map(edge => nodes.find(n => n.id === edge.target)?.data?.label || edge.target);
+        .map(edge => {
+          const node = nodes.find(n => n.id === edge.target);
+          return (node?.data as { label?: string })?.label || edge.target;
+        });
 
     const displayContent = () => {
       if (!blockData.content) return '(empty)';
@@ -220,8 +215,6 @@ function CanvasViewPage() {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          canvasTitle={canvasData.title}
-          onSaveTitle={handleTitleSave}
           onNodeDragStart={interactionHandlers.handleNodeDragStart}
           onNodeDragStop={interactionHandlers.handleNodeDragStop}
           onNodeClick={interactionHandlers.handleNodeClick}

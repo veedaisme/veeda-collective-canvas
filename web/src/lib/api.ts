@@ -26,7 +26,8 @@ const makeAuthenticatedRequest = async <T, V extends Variables = Variables>(
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return gqlClient.request<T, V>(query, variables, headers);
+    gqlClient.setHeaders(headers);
+    return gqlClient.request<T>(query, variables ?? {});
 };
 
 // --- Types (Manual for now, consider codegen later) ---
@@ -401,4 +402,4 @@ export const deleteConnection = async (variables: {
     }
 };
 
-// Add other API functions here (e.g., updateBlockSize...) 
+// Add other API functions here (e.g., updateBlockSize...)
