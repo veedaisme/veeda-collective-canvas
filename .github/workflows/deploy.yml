@@ -48,7 +48,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: veeda-frontend # Replace with your actual Cloudflare Pages project name
+          projectName: veeda-web # Replace with your actual Cloudflare Pages project name
           directory: web/dist # The directory containing the built frontend assets
           # gitHubToken: ${{ secrets.GITHUB_TOKEN }} # Optional
 
