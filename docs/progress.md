@@ -18,6 +18,15 @@
     *   Added environment variables from `backend/.env.example` to GitHub Actions workflow for Cloudflare Worker deployment.
     *   Identified necessary GitHub secrets and Cloudflare Worker secrets for the deployment pipeline.
 
+*   **Milestone:** Fixed Backend GitHub Action Deployment with Wrangler v4.
+    *   Investigated GitHub Actions error: "Missing entry-point" and outdated Wrangler warning.
+    *   Determined root cause was use of deprecated `cloudflare/wrangler-action@v3` and explicit entry file argument.
+    *   Removed explicit `main.ts` argument from deploy command to rely on `wrangler.toml` config.
+    *   Attempted upgrade to `cloudflare/wrangler-action@v4`, but it does not exist (deprecated).
+    *   Updated workflow to install latest Wrangler CLI globally via `npm install -g wrangler@latest`.
+    *   Simplified deploy step to `wrangler deploy --env production` with correct working directory.
+    *   This aligns with Cloudflare's recommended approach for Wrangler v4+ and resolves the entry-point detection error.
+
 ## April 7, 2025 (cont.)
 
 *   **Milestone:** Improved UI with Shadcn Sheet and Bug Fixes.
