@@ -15,6 +15,7 @@
     *   Planned strategy: Deploy frontend to Cloudflare Pages and backend to Cloudflare Workers.
     *   Created `backend/wrangler.toml` configuration file for the Cloudflare Worker.
     *   Created `.github/workflows/deploy.yml` to automate deployment of both frontend and backend via GitHub Actions upon pushes to the `main` branch.
+    *   Added environment variables from `backend/.env.example` to GitHub Actions workflow for Cloudflare Worker deployment.
     *   Identified necessary GitHub secrets and Cloudflare Worker secrets for the deployment pipeline.
 
 ## April 7, 2025 (cont.)
