@@ -2,6 +2,17 @@
 
 ## April 10, 2025
 
+*   **Milestone:** Fixed Wrangler Deployment Errors for Backend (Deno + npm Compatibility).
+    *   Diagnosed Wrangler build failures caused by use of Deno import maps and `npm:` specifiers, which Wrangler cannot resolve during bundling.
+    *   Rewrote all backend imports in `main.ts` to use explicit URLs:
+        *   Deno.land URLs for Hono modules.
+        *   esm.sh CDN URLs for npm packages (`graphql-yoga`, `@graphql-tools/schema`, `@supabase/supabase-js`).
+    *   Cleaned up `deno.json`:
+        *   Removed import map entries for npm packages.
+        *   Added `"compilerOptions.types": ["deno.ns", "deno.unstable"]` to fix `'Deno'` global errors.
+    *   This enables Wrangler to successfully bundle and deploy the backend Worker.
+    *   Next: update `wrangler.toml` vars and test deployment.
+
 *   **Milestone:** Enabled CORS Middleware for Local Development Only.
     *   Modified `backend/dev.ts` to import and apply `@hono/middleware.ts` CORS middleware.
     *   Configured to allow cross-origin requests from `http://localhost:5173` with appropriate headers and methods.

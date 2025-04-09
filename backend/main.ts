@@ -1,15 +1,15 @@
 // backend/main.ts
-import { Hono } from "@hono/mod.ts";
-import { cors } from '@hono/middleware.ts' 
-import type { Context as HonoContext, Next } from "@hono/mod.ts";
-import { createYoga } from "graphql-yoga";
-import { makeExecutableSchema } from "@graphql-tools/schema";
+import { Hono } from "https://deno.land/x/hono@v4.2.9/mod.ts";
+import { cors } from "https://deno.land/x/hono@v4.2.9/middleware.ts";
+import type { Context as HonoContext, Next } from "https://deno.land/x/hono@v4.2.9/mod.ts";
+import { createYoga } from "https://esm.sh/graphql-yoga@5";
+import { makeExecutableSchema } from "https://esm.sh/@graphql-tools/schema@10";
 import { typeDefs } from "./src/graphql/schema.ts";
 import { resolvers } from "./src/graphql/resolvers.ts";
 // Import supabaseAdmin but maybe not the default supabase if creating client per-request
 import { supabaseAdmin } from './src/lib/supabaseClient.ts'; 
-import type { User } from '@supabase/supabase-js';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { User } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Define the shape of our GraphQL context
 interface GraphQLContext {
@@ -131,15 +131,59 @@ const yoga = createYoga<
 // --- Hono App Setup ---
 const app = new Hono();
 
+// --- Configuration ---
+// Define allowed origins (include your production frontend and local dev frontend)
+const ALLOWED_ORIGINS = [
+    'https://app.canvas.com',     // Your production frontend
+    'http://localhost:5173',   // Your local dev frontend (adjust port if needed)
+    // Add any other trusted origins like preview deployment URLs if necessary
+  ];
+
 // *** ADD CORS MIDDLEWARE HERE ***
 // Apply CORS middleware to allow requests from your frontend's origin
 // This should generally come BEFORE your routes that need CORS handling.
 app.use('*', cors({
-    origin: ['https://app.veeda.space', 'http://localhost:5173'], // Allow production and local dev frontends
+    origin: (origin) => { // Dynamically check against allowed list
+        if (ALLOWED_ORIGINS.includes(origin)) {
+          return origin;
+        }
+        // You might return a default origin or null if none match,
+        // depending on how strict you want CORS itself to be.
+        // For origin *restriction*, the next middleware handles blocking.
+        return ALLOWED_ORIGINS[0]; // Or simply return the first allowed origin
+      }, // Allow production and local dev frontends
     allowHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
     allowMethods: ['POST', 'GET', 'OPTIONS'], // Allow necessary methods (POST for GraphQL, OPTIONS for preflight)
     // Optional: allowCredentials: true, // If you need to send cookies/auth headers with credentials
   }));
+
+
+// Origin Check Middleware (Block requests from non-allowed origins)
+app.use('*', async (c: HonoContext, next: Next) => {
+    const origin = c.req.header('Origin');
+  
+    // Allow requests with no Origin header? (e.g., server-to-server, curl?) 
+    // Set allowNoOrigin = true/false based on your security needs.
+    // For strict browser-only access, set to false.
+    const allowNoOrigin = false; 
+  
+    if (!origin && allowNoOrigin) {
+        console.log('[Origin Check] Allowed: No Origin header present.');
+        await next();
+        return;
+    }
+  
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      // Origin is present and in the allowed list
+      console.log(`[Origin Check] Allowed: Origin: ${origin}`);
+      await next();
+    } else {
+      // Origin is missing (and allowNoOrigin is false) OR not in the allowed list
+      console.warn(`[Origin Check] Forbidden: Origin: ${origin ?? 'Not Present'}`);
+      // Return a 403 Forbidden response
+      return c.text('Forbidden', 403); 
+    }
+  });
 
 // Add Request Logging Middleware (Example)
 app.use('*', async (c, next) => {

@@ -1,305 +1,34 @@
 {
   "version": "4",
-  "specifiers": {
-    "npm:@graphql-tools/schema@10": "10.0.23_graphql@16.10.0",
-    "npm:@supabase/supabase-js@2": "2.49.4",
-    "npm:@types/node@*": "22.12.0",
-    "npm:graphql-yoga@^5.4.0": "5.13.2_graphql@16.10.0",
-    "npm:graphql@16": "16.10.0"
-  },
-  "npm": {
-    "@envelop/core@5.2.3": {
-      "integrity": "sha512-KfoGlYD/XXQSc3BkM1/k15+JQbkQ4ateHazeZoWl9P71FsLTDXSjGy6j7QqfhpIDSbxNISqhPMfZHYSbDFOofQ==",
-      "dependencies": [
-        "@envelop/instrumentation",
-        "@envelop/types",
-        "@whatwg-node/promise-helpers",
-        "tslib"
-      ]
-    },
-    "@envelop/instrumentation@1.0.0": {
-      "integrity": "sha512-cxgkB66RQB95H3X27jlnxCRNTmPuSTgmBAq6/4n2Dtv4hsk4yz8FadA1ggmd0uZzvKqWD6CR+WFgTjhDqg7eyw==",
-      "dependencies": [
-        "@whatwg-node/promise-helpers",
-        "tslib"
-      ]
-    },
-    "@envelop/types@5.2.1": {
-      "integrity": "sha512-CsFmA3u3c2QoLDTfEpGr4t25fjMU31nyvse7IzWTvb0ZycuPjMjb0fjlheh+PbhBYb9YLugnT2uY6Mwcg1o+Zg==",
-      "dependencies": [
-        "@whatwg-node/promise-helpers",
-        "tslib"
-      ]
-    },
-    "@graphql-tools/executor@1.4.7_graphql@16.10.0": {
-      "integrity": "sha512-U0nK9jzJRP9/9Izf1+0Gggd6K6RNRsheFo1gC/VWzfnsr0qjcOSS9qTjY0OTC5iTPt4tQ+W5Zpw/uc7mebI6aA==",
-      "dependencies": [
-        "@graphql-tools/utils",
-        "@graphql-typed-document-node/core",
-        "@repeaterjs/repeater",
-        "@whatwg-node/disposablestack",
-        "@whatwg-node/promise-helpers",
-        "graphql",
-        "tslib"
-      ]
-    },
-    "@graphql-tools/merge@9.0.24_graphql@16.10.0": {
-      "integrity": "sha512-NzWx/Afl/1qHT3Nm1bghGG2l4jub28AdvtG11PoUlmjcIjnFBJMv4vqL0qnxWe8A82peWo4/TkVdjJRLXwgGEw==",
-      "dependencies": [
-        "@graphql-tools/utils",
-        "graphql",
-        "tslib"
-      ]
-    },
-    "@graphql-tools/schema@10.0.23_graphql@16.10.0": {
-      "integrity": "sha512-aEGVpd1PCuGEwqTXCStpEkmheTHNdMayiIKH1xDWqYp9i8yKv9FRDgkGrY4RD8TNxnf7iII+6KOBGaJ3ygH95A==",
-      "dependencies": [
-        "@graphql-tools/merge",
-        "@graphql-tools/utils",
-        "graphql",
-        "tslib"
-      ]
-    },
-    "@graphql-tools/utils@10.8.6_graphql@16.10.0": {
-      "integrity": "sha512-Alc9Vyg0oOsGhRapfL3xvqh1zV8nKoFUdtLhXX7Ki4nClaIJXckrA86j+uxEuG3ic6j4jlM1nvcWXRn/71AVLQ==",
-      "dependencies": [
-        "@graphql-typed-document-node/core",
-        "@whatwg-node/promise-helpers",
-        "cross-inspect",
-        "dset",
-        "graphql",
-        "tslib"
-      ]
-    },
-    "@graphql-typed-document-node/core@3.2.0_graphql@16.10.0": {
-      "integrity": "sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==",
-      "dependencies": [
-        "graphql"
-      ]
-    },
-    "@graphql-yoga/logger@2.0.1": {
-      "integrity": "sha512-Nv0BoDGLMg9QBKy9cIswQ3/6aKaKjlTh87x3GiBg2Z4RrjyrM48DvOOK0pJh1C1At+b0mUIM67cwZcFTDLN4sA==",
-      "dependencies": [
-        "tslib"
-      ]
-    },
-    "@graphql-yoga/subscription@5.0.3": {
-      "integrity": "sha512-xLGEataxCULjL9rlTCVFL1IW2E90TnDIL+mE4lZBi9X92jc6s+Q+jk6Ax3I98kryCJh0UMiwjit7CaIIczTiJg==",
-      "dependencies": [
-        "@graphql-yoga/typed-event-target",
-        "@repeaterjs/repeater",
-        "@whatwg-node/events",
-        "tslib"
-      ]
-    },
-    "@graphql-yoga/typed-event-target@3.0.2": {
-      "integrity": "sha512-ZpJxMqB+Qfe3rp6uszCQoag4nSw42icURnBRfFYSOmTgEeOe4rD0vYlbA8spvCu2TlCesNTlEN9BLWtQqLxabA==",
-      "dependencies": [
-        "@repeaterjs/repeater",
-        "tslib"
-      ]
-    },
-    "@repeaterjs/repeater@3.0.6": {
-      "integrity": "sha512-Javneu5lsuhwNCryN+pXH93VPQ8g0dBX7wItHFgYiwQmzE1sVdg5tWHiOgHywzL2W21XQopa7IwIEnNbmeUJYA=="
-    },
-    "@supabase/auth-js@2.69.1": {
-      "integrity": "sha512-FILtt5WjCNzmReeRLq5wRs3iShwmnWgBvxHfqapC/VoljJl+W8hDAyFmf1NVw3zH+ZjZ05AKxiKxVeb0HNWRMQ==",
-      "dependencies": [
-        "@supabase/node-fetch"
-      ]
-    },
-    "@supabase/functions-js@2.4.4": {
-      "integrity": "sha512-WL2p6r4AXNGwop7iwvul2BvOtuJ1YQy8EbOd0dhG1oN1q8el/BIRSFCFnWAMM/vJJlHWLi4ad22sKbKr9mvjoA==",
-      "dependencies": [
-        "@supabase/node-fetch"
-      ]
-    },
-    "@supabase/node-fetch@2.6.15": {
-      "integrity": "sha512-1ibVeYUacxWYi9i0cf5efil6adJ9WRyZBLivgjs+AUpewx1F3xPi7gLgaASI2SmIQxPoCEjAsLAzKPgMJVgOUQ==",
-      "dependencies": [
-        "whatwg-url"
-      ]
-    },
-    "@supabase/postgrest-js@1.19.4": {
-      "integrity": "sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==",
-      "dependencies": [
-        "@supabase/node-fetch"
-      ]
-    },
-    "@supabase/realtime-js@2.11.2": {
-      "integrity": "sha512-u/XeuL2Y0QEhXSoIPZZwR6wMXgB+RQbJzG9VErA3VghVt7uRfSVsjeqd7m5GhX3JR6dM/WRmLbVR8URpDWG4+w==",
-      "dependencies": [
-        "@supabase/node-fetch",
-        "@types/phoenix",
-        "@types/ws",
-        "ws"
-      ]
-    },
-    "@supabase/storage-js@2.7.1": {
-      "integrity": "sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==",
-      "dependencies": [
-        "@supabase/node-fetch"
-      ]
-    },
-    "@supabase/supabase-js@2.49.4": {
-      "integrity": "sha512-jUF0uRUmS8BKt37t01qaZ88H9yV1mbGYnqLeuFWLcdV+x1P4fl0yP9DGtaEhFPZcwSom7u16GkLEH9QJZOqOkw==",
-      "dependencies": [
-        "@supabase/auth-js",
-        "@supabase/functions-js",
-        "@supabase/node-fetch",
-        "@supabase/postgrest-js",
-        "@supabase/realtime-js",
-        "@supabase/storage-js"
-      ]
-    },
-    "@types/node@22.12.0": {
-      "integrity": "sha512-Fll2FZ1riMjNmlmJOdAyY5pUbkftXslB5DgEzlIuNaiWhXd00FhWxVC/r4yV/4wBb9JfImTu+jiSvXTkJ7F/gA==",
-      "dependencies": [
-        "undici-types"
-      ]
-    },
-    "@types/phoenix@1.6.6": {
-      "integrity": "sha512-PIzZZlEppgrpoT2QgbnDU+MMzuR6BbCjllj0bM70lWoejMeNJAxCchxnv7J3XFkI8MpygtRpzXrIlmWUBclP5A=="
-    },
-    "@types/ws@8.18.1": {
-      "integrity": "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==",
-      "dependencies": [
-        "@types/node"
-      ]
-    },
-    "@whatwg-node/disposablestack@0.0.6": {
-      "integrity": "sha512-LOtTn+JgJvX8WfBVJtF08TGrdjuFzGJc4mkP8EdDI8ADbvO7kiexYep1o8dwnt0okb0jYclCDXF13xU7Ge4zSw==",
-      "dependencies": [
-        "@whatwg-node/promise-helpers",
-        "tslib"
-      ]
-    },
-    "@whatwg-node/events@0.1.2": {
-      "integrity": "sha512-ApcWxkrs1WmEMS2CaLLFUEem/49erT3sxIVjpzU5f6zmVcnijtDSrhoK2zVobOIikZJdH63jdAXOrvjf6eOUNQ==",
-      "dependencies": [
-        "tslib"
-      ]
-    },
-    "@whatwg-node/fetch@0.10.5": {
-      "integrity": "sha512-+yFJU3hmXPAHJULwx0VzCIsvr/H0lvbPvbOH3areOH3NAuCxCwaJsQ8w6/MwwMcvEWIynSsmAxoyaH04KeosPg==",
-      "dependencies": [
-        "@whatwg-node/node-fetch",
-        "urlpattern-polyfill"
-      ]
-    },
-    "@whatwg-node/node-fetch@0.7.17": {
-      "integrity": "sha512-Ni8A2H/r6brNf4u8Y7ATxmWUD0xltsQ6a4NnjWSbw4PgaT34CbY+u4QtVsFj9pTC3dBKJADKjac3AieAig+PZA==",
-      "dependencies": [
-        "@whatwg-node/disposablestack",
-        "@whatwg-node/promise-helpers",
-        "busboy",
-        "tslib"
-      ]
-    },
-    "@whatwg-node/promise-helpers@1.3.0": {
-      "integrity": "sha512-486CouizxHXucj8Ky153DDragfkMcHtVEToF5Pn/fInhUUSiCmt9Q4JVBa6UK5q4RammFBtGQ4C9qhGlXU9YbA==",
-      "dependencies": [
-        "tslib"
-      ]
-    },
-    "@whatwg-node/server@0.10.3": {
-      "integrity": "sha512-2Dnfey57vWR+hDUMjPhNzJQc9z116BBzSQwR9eD0vhnzYmN2rJXuY0QuMaHDCCqEZRmFHg2bo8iJ+/1uHOlxpg==",
-      "dependencies": [
-        "@envelop/instrumentation",
-        "@whatwg-node/disposablestack",
-        "@whatwg-node/fetch",
-        "@whatwg-node/promise-helpers",
-        "tslib"
-      ]
-    },
-    "busboy@1.6.0": {
-      "integrity": "sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==",
-      "dependencies": [
-        "streamsearch"
-      ]
-    },
-    "cross-inspect@1.0.1": {
-      "integrity": "sha512-Pcw1JTvZLSJH83iiGWt6fRcT+BjZlCDRVwYLbUcHzv/CRpB7r0MlSrGbIyQvVSNyGnbt7G4AXuyCiDR3POvZ1A==",
-      "dependencies": [
-        "tslib"
-      ]
-    },
-    "dset@3.1.4": {
-      "integrity": "sha512-2QF/g9/zTaPDc3BjNcVTGoBbXBgYfMTTceLaYcFJ/W9kggFUkhxD/hMEeuLKbugyef9SqAx8cpgwlIP/jinUTA=="
-    },
-    "graphql-yoga@5.13.2_graphql@16.10.0": {
-      "integrity": "sha512-ZXhIoAPCV2K2ozwpxDL1ZXhhI2SvIp3hJMaSRaHcojLGE9w9iV8oYGPnZKcV5eisF3VE13RcIF4Ys6TTkU338Q==",
-      "dependencies": [
-        "@envelop/core",
-        "@envelop/instrumentation",
-        "@graphql-tools/executor",
-        "@graphql-tools/schema",
-        "@graphql-tools/utils",
-        "@graphql-yoga/logger",
-        "@graphql-yoga/subscription",
-        "@whatwg-node/fetch",
-        "@whatwg-node/promise-helpers",
-        "@whatwg-node/server",
-        "dset",
-        "graphql",
-        "lru-cache",
-        "tslib"
-      ]
-    },
-    "graphql@16.10.0": {
-      "integrity": "sha512-AjqGKbDGUFRKIRCP9tCKiIGHyriz2oHEbPIbEtcSLSs4YjReZOIPQQWek4+6hjw62H9QShXHyaGivGiYVLeYFQ=="
-    },
-    "lru-cache@10.4.3": {
-      "integrity": "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="
-    },
-    "streamsearch@1.1.0": {
-      "integrity": "sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg=="
-    },
-    "tr46@0.0.3": {
-      "integrity": "sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw=="
-    },
-    "tslib@2.8.1": {
-      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
-    },
-    "undici-types@6.20.0": {
-      "integrity": "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="
-    },
-    "urlpattern-polyfill@10.0.0": {
-      "integrity": "sha512-H/A06tKD7sS1O1X2SshBVeA5FLycRpjqiBeqGKmBwBDBy28EnRjORxTNe269KSSr5un5qyWi1iL61wLxpd+ZOg=="
-    },
-    "webidl-conversions@3.0.1": {
-      "integrity": "sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ=="
-    },
-    "whatwg-url@5.0.0": {
-      "integrity": "sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==",
-      "dependencies": [
-        "tr46",
-        "webidl-conversions"
-      ]
-    },
-    "ws@8.18.1": {
-      "integrity": "sha512-RKW2aJZMXeMxVpnZ6bck+RswznaxmzdULiBr6KY7XkTnW8uvt0iT9H5DkHUChXrc+uurzwa0rVI16n/Xzjdz1w=="
-    }
-  },
   "redirects": {
     "https://esm.sh/@envelop/core@^5.0.0?target=denonext": "https://esm.sh/@envelop/core@5.2.3?target=denonext",
+    "https://esm.sh/@envelop/core@^5.2.3?target=denonext": "https://esm.sh/@envelop/core@5.2.3?target=denonext",
     "https://esm.sh/@envelop/instrumentation@^1.0.0?target=denonext": "https://esm.sh/@envelop/instrumentation@1.0.0?target=denonext",
     "https://esm.sh/@envelop/types@^5.2.1?target=denonext": "https://esm.sh/@envelop/types@5.2.1?target=denonext",
     "https://esm.sh/@graphql-tools/executor@^1.2.5?target=denonext": "https://esm.sh/@graphql-tools/executor@1.4.7?target=denonext",
+    "https://esm.sh/@graphql-tools/executor@^1.4.0?target=denonext": "https://esm.sh/@graphql-tools/executor@1.4.7?target=denonext",
     "https://esm.sh/@graphql-tools/merge@^9.0.24?target=denonext": "https://esm.sh/@graphql-tools/merge@9.0.24?target=denonext",
     "https://esm.sh/@graphql-tools/merge@^9.0.3?target=denonext": "https://esm.sh/@graphql-tools/merge@9.0.24?target=denonext",
+    "https://esm.sh/@graphql-tools/schema@10": "https://esm.sh/@graphql-tools/schema@10.0.23",
     "https://esm.sh/@graphql-tools/schema@^10.0.0?target=denonext": "https://esm.sh/@graphql-tools/schema@10.0.23?target=denonext",
+    "https://esm.sh/@graphql-tools/schema@^10.0.11?target=denonext": "https://esm.sh/@graphql-tools/schema@10.0.23?target=denonext",
     "https://esm.sh/@graphql-tools/utils@^10.1.0?target=denonext": "https://esm.sh/@graphql-tools/utils@10.8.6?target=denonext",
     "https://esm.sh/@graphql-tools/utils@^10.2.1?target=denonext": "https://esm.sh/@graphql-tools/utils@10.8.6?target=denonext",
+    "https://esm.sh/@graphql-tools/utils@^10.6.2?target=denonext": "https://esm.sh/@graphql-tools/utils@10.8.6?target=denonext",
     "https://esm.sh/@graphql-tools/utils@^10.8.6?target=denonext": "https://esm.sh/@graphql-tools/utils@10.8.6?target=denonext",
     "https://esm.sh/@graphql-yoga/logger@^2.0.0?target=denonext": "https://esm.sh/@graphql-yoga/logger@2.0.1?target=denonext",
+    "https://esm.sh/@graphql-yoga/logger@^2.0.1?target=denonext": "https://esm.sh/@graphql-yoga/logger@2.0.1?target=denonext",
     "https://esm.sh/@graphql-yoga/subscription@^5.0.0?target=denonext": "https://esm.sh/@graphql-yoga/subscription@5.0.3?target=denonext",
     "https://esm.sh/@graphql-yoga/subscription@^5.0.1?target=denonext": "https://esm.sh/@graphql-yoga/subscription@5.0.3?target=denonext",
+    "https://esm.sh/@graphql-yoga/subscription@^5.0.4?target=denonext": "https://esm.sh/@graphql-yoga/subscription@5.0.4?target=denonext",
     "https://esm.sh/@kamilkisiela/fast-url-parser@^1.1.4?target=denonext": "https://esm.sh/@kamilkisiela/fast-url-parser@1.1.4?target=denonext",
     "https://esm.sh/@repeaterjs/repeater@^3.0.4?target=denonext": "https://esm.sh/@repeaterjs/repeater@3.0.6?target=denonext",
+    "https://esm.sh/@supabase/node-fetch@^2.6.14?target=denonext": "https://esm.sh/@supabase/node-fetch@2.6.15?target=denonext",
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.49.4",
     "https://esm.sh/@types/busboy@~1.5.4/index.d.ts": "https://esm.sh/@types/busboy@1.5.4/index.d.ts",
     "https://esm.sh/@types/fast-decode-uri-component@~1.0.0/index.d.ts": "https://esm.sh/@types/fast-decode-uri-component@1.0.0/index.d.ts",
     "https://esm.sh/@types/streamsearch@~1.1.2/index.d.ts": "https://esm.sh/@types/streamsearch@1.1.2/index.d.ts",
+    "https://esm.sh/@types/ws@~8.5.14/index.d.mts": "https://esm.sh/@types/ws@8.5.14/index.d.mts",
     "https://esm.sh/@whatwg-node/disposablestack@^0.0.6?target=denonext": "https://esm.sh/@whatwg-node/disposablestack@0.0.6?target=denonext",
     "https://esm.sh/@whatwg-node/events@^0.1.0?target=denonext": "https://esm.sh/@whatwg-node/events@0.1.2?target=denonext",
     "https://esm.sh/@whatwg-node/fetch@^0.10.5?target=denonext": "https://esm.sh/@whatwg-node/fetch@0.10.5?target=denonext",
@@ -309,18 +38,29 @@
     "https://esm.sh/@whatwg-node/promise-helpers@^1.0.0?target=denonext": "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext",
     "https://esm.sh/@whatwg-node/promise-helpers@^1.2.1?target=denonext": "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext",
     "https://esm.sh/@whatwg-node/promise-helpers@^1.2.2?target=denonext": "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext",
+    "https://esm.sh/@whatwg-node/promise-helpers@^1.2.3?target=denonext": "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext",
     "https://esm.sh/@whatwg-node/promise-helpers@^1.2.4?target=denonext": "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext",
     "https://esm.sh/@whatwg-node/promise-helpers@^1.2.5?target=denonext": "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext",
+    "https://esm.sh/@whatwg-node/server@^0.10.2?target=denonext": "https://esm.sh/@whatwg-node/server@0.10.3?target=denonext",
     "https://esm.sh/@whatwg-node/server@^0.9.33?target=denonext": "https://esm.sh/@whatwg-node/server@0.9.71?target=denonext",
+    "https://esm.sh/bufferutil@^4.0.1?target=denonext": "https://esm.sh/bufferutil@4.0.9?target=denonext",
     "https://esm.sh/busboy@^1.6.0?target=denonext": "https://esm.sh/busboy@1.6.0?target=denonext",
     "https://esm.sh/dset@^3.1.1?target=denonext": "https://esm.sh/dset@3.1.4?target=denonext",
     "https://esm.sh/dset@^3.1.4/merge?target=denonext": "https://esm.sh/dset@3.1.4/merge?target=denonext",
+    "https://esm.sh/dset@^3.1.4?target=denonext": "https://esm.sh/dset@3.1.4?target=denonext",
     "https://esm.sh/fast-decode-uri-component@^1.0.1?target=denonext": "https://esm.sh/fast-decode-uri-component@1.0.1?target=denonext",
     "https://esm.sh/fast-querystring@^1.1.1?target=denonext": "https://esm.sh/fast-querystring@1.1.2?target=denonext",
+    "https://esm.sh/graphql-yoga@5": "https://esm.sh/graphql-yoga@5.13.3",
     "https://esm.sh/graphql@^16.10.0?target=denonext": "https://esm.sh/graphql@16.10.0?target=denonext",
     "https://esm.sh/lru-cache@^10.0.0?target=denonext": "https://esm.sh/lru-cache@10.4.3?target=denonext",
+    "https://esm.sh/node-gyp-build@^4.3.0?target=denonext": "https://esm.sh/node-gyp-build@4.8.4?target=denonext",
     "https://esm.sh/streamsearch@^1.1.0?target=denonext": "https://esm.sh/streamsearch@1.1.0?target=denonext",
-    "https://esm.sh/urlpattern-polyfill@^10.0.0?target=denonext": "https://esm.sh/urlpattern-polyfill@10.0.0?target=denonext"
+    "https://esm.sh/tr46@~0.0.3?target=denonext": "https://esm.sh/tr46@0.0.3?target=denonext",
+    "https://esm.sh/urlpattern-polyfill@^10.0.0?target=denonext": "https://esm.sh/urlpattern-polyfill@10.0.0?target=denonext",
+    "https://esm.sh/utf-8-validate@%3E=5.0.2?target=denonext": "https://esm.sh/utf-8-validate@6.0.5?target=denonext",
+    "https://esm.sh/webidl-conversions@^3.0.0?target=denonext": "https://esm.sh/webidl-conversions@3.0.1?target=denonext",
+    "https://esm.sh/whatwg-url@^5.0.0?target=denonext": "https://esm.sh/whatwg-url@5.0.0?target=denonext",
+    "https://esm.sh/ws@^8.18.0?target=denonext": "https://esm.sh/ws@8.18.1?target=denonext"
   },
   "remote": {
     "https://deno.land/std@0.224.0/dotenv/mod.ts": "0180eaeedaaf88647318811cdaa418cc64dc51fb08354f91f5f480d0a1309f7d",
@@ -351,6 +91,7 @@
     "https://deno.land/x/hono@v4.2.9/jsx/dom/render.ts": "c2ed1eaa7c5897b92b865f4a860c2c42e63e2608b6d83d4e5983fe96c51ae485",
     "https://deno.land/x/hono@v4.2.9/jsx/hooks/index.ts": "a8bb8fea7127cd84cb14eaa4c614a9160456afba5dc08f6c4d70c003561a0dd0",
     "https://deno.land/x/hono@v4.2.9/jsx/index.ts": "ca3b63c99e446b29d5d1a6ec79948146e9c3c88121bcbfa4982d0e9b21e33906",
+    "https://deno.land/x/hono@v4.2.9/jsx/intrinsic-elements.ts": "21c3a8f6ba07f0d7d7c0ec7293c79c26b9b62df2894e26cb6c17b6c7ec381264",
     "https://deno.land/x/hono@v4.2.9/jsx/streaming.ts": "5e5dde9a546041353b9a3860fc9020471f762813f10e1290009ab6bd40e7bdcf",
     "https://deno.land/x/hono@v4.2.9/jsx/types.ts": "880971bd1e0704a6fba6b786ca596cbe23fc06e36c506f42ea17f84f9879f278",
     "https://deno.land/x/hono@v4.2.9/jsx/utils.ts": "7b9d84ce478c66a5f4709dc3a873ac7104ba3427597683221827abec2761da0e",
@@ -420,6 +161,7 @@
     "https://esm.sh/@graphql-tools/executor@1.4.7?target=denonext": "2125ef45bab216216134d1c4825a2107b74700a5345f3cdc0c903d7536c9bc5d",
     "https://esm.sh/@graphql-tools/merge@9.0.24/denonext/merge.mjs": "40544a7d002a3d78e7da8ac645aba61d606abb44e41041083b169a40218a5ebf",
     "https://esm.sh/@graphql-tools/merge@9.0.24?target=denonext": "7fcfb057d2faaee620b895ae41e22544be5184c46f46405ff196aca3c499fedf",
+    "https://esm.sh/@graphql-tools/schema@10.0.23": "c814f7c8d4c6833b8bfc08b8e6887167d48dc8b62aad593fa57d113c433eb742",
     "https://esm.sh/@graphql-tools/schema@10.0.23/denonext/schema.mjs": "2f3db3562b0d1997540d286583a4bfa3914bad98f6eb7165c08ee9beb07ddc4b",
     "https://esm.sh/@graphql-tools/schema@10.0.23?target=denonext": "c814f7c8d4c6833b8bfc08b8e6887167d48dc8b62aad593fa57d113c433eb742",
     "https://esm.sh/@graphql-tools/schema@10.0.4": "6b1d341d51b18d8d2b17f473f42fc5f3a491a942fe2a0dac97013ca6c4cc5157",
@@ -430,11 +172,22 @@
     "https://esm.sh/@graphql-yoga/logger@2.0.1?target=denonext": "93485c958459b97ab0972ac0bf703a4472cbd4b480a7e3b90d1f40f69edff8aa",
     "https://esm.sh/@graphql-yoga/subscription@5.0.3/denonext/subscription.mjs": "ab24f4d78263f8186f207113046055e6f84d37ec2b8cc307adad28565f29a22e",
     "https://esm.sh/@graphql-yoga/subscription@5.0.3?target=denonext": "a6e2e9a3d8cf8068ee2648f8b10ae961f3aa5876ac8e16ef705b4c5a72eb7e45",
+    "https://esm.sh/@graphql-yoga/subscription@5.0.4/denonext/subscription.mjs": "df5a22d2841ed90829ff8b85886bc45dcfb75bab45c6f8b12ba20079d5e9c8cd",
+    "https://esm.sh/@graphql-yoga/subscription@5.0.4?target=denonext": "e82edfe9a6c98ab3a892e33848117d23cf714ca2f04fdbdc337d8b7dcdad5075",
     "https://esm.sh/@kamilkisiela/fast-url-parser@1.1.4": "4606d68eedd715e0536c283782568a4ccf3f99432e199adea75bce664956b745",
     "https://esm.sh/@kamilkisiela/fast-url-parser@1.1.4/denonext/fast-url-parser.mjs": "c9890292290306de9c401baa02b5f1752dbfadc037c93b9745cfc0d7b7fa5060",
     "https://esm.sh/@kamilkisiela/fast-url-parser@1.1.4?target=denonext": "4606d68eedd715e0536c283782568a4ccf3f99432e199adea75bce664956b745",
     "https://esm.sh/@repeaterjs/repeater@3.0.6/denonext/repeater.mjs": "7827c66567d549c24097e2d30c47c0420625208441748af1d62fb26767ae5d74",
     "https://esm.sh/@repeaterjs/repeater@3.0.6?target=denonext": "c833337414e7929a79297c008e85b82bce092d88578747eb3b0b665de23ee755",
+    "https://esm.sh/@supabase/auth-js@2.69.1/denonext/auth-js.mjs": "fb31c3925437753f5a8a90fc57ea24dc5b68b2b295e696123b1b6a635b7b3ada",
+    "https://esm.sh/@supabase/functions-js@2.4.4/denonext/functions-js.mjs": "7adeb257410ef3c4a8a1eb9b4ff416c0075d1c32860ca04913c8a9dace1de6a6",
+    "https://esm.sh/@supabase/node-fetch@2.6.15/denonext/node-fetch.mjs": "0bae9052231f4f6dbccc7234d05ea96923dbf967be12f402764580b6bf9f713d",
+    "https://esm.sh/@supabase/node-fetch@2.6.15?target=denonext": "4d28c4ad97328403184353f68434f2b6973971507919e9150297413664919cf3",
+    "https://esm.sh/@supabase/postgrest-js@1.19.4/denonext/postgrest-js.mjs": "2073b5552ba10c7a8302bffffae771e3aede1daf833382355dae239fb0ab2576",
+    "https://esm.sh/@supabase/realtime-js@2.11.2/denonext/realtime-js.mjs": "c33ac375b6be89c893f9df844d2525a4ace015a35aa6ba236270d00c6605c7ba",
+    "https://esm.sh/@supabase/storage-js@2.7.1/denonext/storage-js.mjs": "73ac8cdc95cfcd794fe603dbd7ce06d539ab51538ae6467eabe0f9cc26c993aa",
+    "https://esm.sh/@supabase/supabase-js@2.49.4": "d52c4d06946766d328fdd0ac2e007f52bb6d2ef7ce6103ad9f0f57d92b73e978",
+    "https://esm.sh/@supabase/supabase-js@2.49.4/denonext/supabase-js.mjs": "8c664dda021a5abc7c0b1f49d89d5886a7f9c63c9d365eb3764e1e27440bd781",
     "https://esm.sh/@whatwg-node/disposablestack@0.0.6/denonext/disposablestack.mjs": "56b1e9de5d08c8a5109ed6efdbd33f19190a8fd10330f0f2439c8f5103d8affc",
     "https://esm.sh/@whatwg-node/disposablestack@0.0.6?target=denonext": "f2a71540ff6895c48c499ca2bb0060a0e6f5aca01e4f19880cc3101bef950373",
     "https://esm.sh/@whatwg-node/events@0.1.2/denonext/events.mjs": "5fdaab9b89ffa81155ce99f1896470d8a965dbb396cd682e8684b045c06c96b4",
@@ -449,8 +202,12 @@
     "https://esm.sh/@whatwg-node/node-fetch@0.7.17?target=denonext": "f222d75b743161f15a463b404a4f9bdf096fb8899f3b18bb6df76cc79036a0f6",
     "https://esm.sh/@whatwg-node/promise-helpers@1.3.0/denonext/promise-helpers.mjs": "3de65769bfce435d3eb2d11697a8986b88957b70b07d33aa9257b0fd7b3ee4f5",
     "https://esm.sh/@whatwg-node/promise-helpers@1.3.0?target=denonext": "38d62e12d0e00eadd46a2b87135ec519e25ebddde28594d427291da73431716b",
+    "https://esm.sh/@whatwg-node/server@0.10.3/denonext/server.mjs": "975684515b4ab6adcb0c831bf46d47e2d2cb9570eaeb9b0c46914f61e1e533c1",
+    "https://esm.sh/@whatwg-node/server@0.10.3?target=denonext": "5e41587a4098c49d712259b0f5ff5042bf90c8ca9710548608c0760539cf43ff",
     "https://esm.sh/@whatwg-node/server@0.9.71/denonext/server.mjs": "446888cc37c57efdcff571440fc967143dd458e46ed0d238740e4a30de0bb25f",
     "https://esm.sh/@whatwg-node/server@0.9.71?target=denonext": "b7049b9bd640ea44a6dd99a90855272989fa7c417b94ef987cb6cd4eba4975a5",
+    "https://esm.sh/bufferutil@4.0.9/denonext/bufferutil.mjs": "13dca4d5bb2c68cbe119f880fa3bd785b9a81a8e02e0834dae604b4b85295cd8",
+    "https://esm.sh/bufferutil@4.0.9?target=denonext": "e32574569ab438facfcc3f412c659b0719bbf05477136ca176938c9a3ac45125",
     "https://esm.sh/busboy@1.6.0/denonext/busboy.mjs": "c55bc5c7806a395cc7f43abee1220fb5b540458d9a4971635e40119714f26a77",
     "https://esm.sh/busboy@1.6.0?target=denonext": "306395c68526ce7d0c4d387e604c630613182b39f805bc1dc753fc0364e88b42",
     "https://esm.sh/cross-inspect@1.0.1/denonext/cross-inspect.mjs": "520aa98f921ed082e062eadca18fb14c28656c1fbecc27666e94339d60bcc5e3",
@@ -464,6 +221,8 @@
     "https://esm.sh/fast-querystring@1.1.2?target=denonext": "3e9cefb4fcb9cd80fa3d89b39a3d4d3cae61b550529fae5d093cc966c02a3802",
     "https://esm.sh/graphql-scalars@1.23.0": "c0d97c7e8338f07ed5bc28d5ec08c75c6676b8fffa3d8163eb3ecdddb32c508b",
     "https://esm.sh/graphql-scalars@1.23.0/denonext/graphql-scalars.mjs": "7ec69b0c7b6769740cffb34d11cd3db8cb1b13a29b00edae5bd2b367cd7108da",
+    "https://esm.sh/graphql-yoga@5.13.3": "89df0c215d6d90744f2f0efb29f213641e5dab8dae6758d0e5f410dc095f3111",
+    "https://esm.sh/graphql-yoga@5.13.3/denonext/graphql-yoga.mjs": "e0bca424a0056c946df46f3dd8cb995fcd5e13d03ff850f32f99c9d516b88254",
     "https://esm.sh/graphql-yoga@5.3.1": "c454493d5eefe93330e6e44217c387c4078e3d1b157e4c73521207a040c6cc8a",
     "https://esm.sh/graphql-yoga@5.3.1/denonext/graphql-yoga.mjs": "0902356a50f2fa31c906372bb3a7cea37fc0cd875276c14bdaad7b452e7264f4",
     "https://esm.sh/graphql-yoga@5.4.0": "4ace5002d7e4ab0bc8c526209569fb7e6fe4e6cc0f2be294e1f0e8c3ef673622",
@@ -476,18 +235,22 @@
     "https://esm.sh/graphql@16.8.1/denonext/graphql.mjs": "cb030940c21782c05d1ec9d944206d6c46fb3cd7f9e06e4d00bbac3d1a6b7bdf",
     "https://esm.sh/lru-cache@10.4.3/denonext/lru-cache.mjs": "ba5ee5ff9067a3a33de530b47c0ce7e81cdff92937e5519258ed422b7e23fbdb",
     "https://esm.sh/lru-cache@10.4.3?target=denonext": "e0a3f66d0dbb61c67fbec24fb29ba1b18e21dab43178cfba399481560e076382",
+    "https://esm.sh/node-gyp-build@4.8.4/denonext/node-gyp-build.mjs": "9a86f2d044fc77bd60aaa3d697c2ba1b818da5fb1b9aaeedec59a40b8e908803",
+    "https://esm.sh/node-gyp-build@4.8.4?target=denonext": "261a6cedf1fdbf159798141ba1e2311ac1510682c5c8b55dacc8cf5fdee4aa06",
     "https://esm.sh/streamsearch@1.1.0/denonext/streamsearch.mjs": "01566a1bae595b9ae3200fa5a19770c6175acbd68b220746d7e5ef50da34b5dd",
     "https://esm.sh/streamsearch@1.1.0?target=denonext": "a96b77397ee3003dfc7528a8b80f07776d8137f54007ecf618bc4d19e8306d38",
+    "https://esm.sh/tr46@0.0.3/denonext/tr46.mjs": "5753ec0a99414f4055f0c1f97691100f13d88e48a8443b00aebb90a512785fa2",
+    "https://esm.sh/tr46@0.0.3?target=denonext": "19cb9be0f0d418a0c3abb81f2df31f080e9540a04e43b0f699bce1149cba0cbb",
     "https://esm.sh/urlpattern-polyfill@10.0.0/denonext/urlpattern-polyfill.mjs": "c369fb7a3eb322eeffc84c3f190e941434e1c030a817b613bdd33e0c92a6a24d",
     "https://esm.sh/urlpattern-polyfill@10.0.0/denonext/urlpattern.mjs": "c77f0ad40d7b30899711bb508026cd0b98d3b436e7852bb718b72efcd2412382",
-    "https://esm.sh/urlpattern-polyfill@10.0.0?target=denonext": "eff1a55a979dc808a304bbac05398940961bd8f67a760f343bd8fa3dffe05e75"
-  },
-  "workspace": {
-    "dependencies": [
-      "npm:@graphql-tools/schema@10",
-      "npm:@supabase/supabase-js@2",
-      "npm:graphql-yoga@^5.4.0",
-      "npm:graphql@16"
-    ]
+    "https://esm.sh/urlpattern-polyfill@10.0.0?target=denonext": "eff1a55a979dc808a304bbac05398940961bd8f67a760f343bd8fa3dffe05e75",
+    "https://esm.sh/utf-8-validate@6.0.5/denonext/utf-8-validate.mjs": "66b8ea532a0c745068f5b96ddb1bae332c3036703243541d2e89e66331974d98",
+    "https://esm.sh/utf-8-validate@6.0.5?target=denonext": "071bc33ba1a58297e23a34d69dd589fd06df04b0f373b382ff5da544a623f271",
+    "https://esm.sh/webidl-conversions@3.0.1/denonext/webidl-conversions.mjs": "54b5c2d50a294853c4ccebf9d5ed8988c94f4e24e463d84ec859a866ea5fafec",
+    "https://esm.sh/webidl-conversions@3.0.1?target=denonext": "4e20318d50528084616c79d7b3f6e7f0fe7b6d09013bd01b3974d7448d767e29",
+    "https://esm.sh/whatwg-url@5.0.0/denonext/whatwg-url.mjs": "29b16d74ee72624c915745bbd25b617cfd2248c6af0f5120d131e232a9a9af79",
+    "https://esm.sh/whatwg-url@5.0.0?target=denonext": "f001a2cadf81312d214ca330033f474e74d81a003e21e8c5d70a1f46dc97b02d",
+    "https://esm.sh/ws@8.18.1/denonext/ws.mjs": "732cae76ba0acb311a561003d2f7ef569293cb9159d67dd800ab346b84f80432",
+    "https://esm.sh/ws@8.18.1?target=denonext": "e99b670fc49b38e15a7576ddcd5bb01e123fe9b3a017db7f97898127811b4e27"
   }
 }

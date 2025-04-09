@@ -9,8 +9,8 @@ import {
 } from '../data/db.ts'; // Adjusted import path
 import { GraphQLError } from 'https://esm.sh/graphql@16.8.1'; // Correct CDN import
 import { DateTimeResolver, JSONResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Use correct case: JSONResolver
-import type { User as SupabaseUser } from '@supabase/supabase-js'; // Rename imported User
-import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
+import type { User as SupabaseUser } from "https://esm.sh/@supabase/supabase-js@2"; // Rename imported User
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2"; // Import SupabaseClient type
 
 // --- Interfaces & Context (Assuming Supabase Auth integration later) ---
 interface User {
