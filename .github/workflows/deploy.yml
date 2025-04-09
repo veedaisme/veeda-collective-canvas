@@ -70,7 +70,7 @@ jobs:
       # must be configured in the Cloudflare Worker settings beforehand
       # (via dashboard or `wrangler secret put`). This step only deploys the code.
       - name: Deploy Worker
-        run: wrangler deploy
+        run: wrangler deploy --env production main.ts
         working-directory: ./backend # Ensure wrangler runs in the backend directory
         env:
           # Pass Supabase configuration to the worker deployment
