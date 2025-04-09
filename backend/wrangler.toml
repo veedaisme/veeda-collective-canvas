@@ -1,7 +1,7 @@
 # backend/wrangler.toml
 
 # A unique name for your Worker. This will form part of its URL.
-name = "veeda-backend-worker" # This seems fine
+name = "veeda-backend" # This seems fine
 
 # The main entry point for your Worker code. Pointing to your modified main.ts
 main = "main.ts"
@@ -11,7 +11,7 @@ compatibility_date = "2024-04-05" # Keep this or update to a newer date if neede
 
 # --- VERY IMPORTANT: Enable Deno Compatibility ---
 # This tells the Cloudflare Workers runtime to use the Deno runtime layer.
-compatibility_flags = [ "deno", "nodejs_compat" ]
+compatibility_flags = [ "nodejs_compat" ]
 
 # --- Secrets ---
 # Runtime secrets MUST be configured using the Cloudflare dashboard or Wrangler CLI.
