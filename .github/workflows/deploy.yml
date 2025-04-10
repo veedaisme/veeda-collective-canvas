@@ -63,20 +63,40 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: 2.2.8  # Match your local Deno version
+          deno-version: 2.2.8
 
-      - name: Install Wrangler
-        run: npm install -g wrangler
+      - name: Install esbuild
+        run: npm install -g esbuild
 
-      - name: Fix vars inheritance in wrangler.toml
+      - name: Bundle with esbuild
+        working-directory: ./backend
+        run: |
+          esbuild main.ts \
+            --bundle \
+            --format=esm \
+            --outfile=dist/worker.js \
+            --external:__STATIC_CONTENT_MANIFEST \
+            --external:@hono/mod.ts \
+            --external:@hono/middleware.ts \
+            --external:graphql-yoga \
+            --external:@graphql-tools/schema \
+            --external:@supabase/supabase-js
+
+      - name: Update wrangler.toml for bundled file
         working-directory: ./backend
         run: |
           # Copy vars to env.production.vars if needed
           if grep -q '\[vars\]' wrangler.toml && ! grep -q '\[env\.production\.vars\]' wrangler.toml; then
             echo -e "\n[env.production.vars]\nENVIRONMENT = \"production\"" >> wrangler.toml
           fi
+          
+          # Update main entry point
+          sed -i 's/main = "main.ts"/main = "dist\/worker.js"/' wrangler.toml
 
-      - name: Deploy to Cloudflare Workers (Production)
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Deploy to Cloudflare Workers
         working-directory: ./backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -87,7 +107,5 @@ jobs:
           wrangler secret put SUPABASE_ANON_KEY --env production <<< "${{ secrets.SUPABASE_ANON_KEY }}"
           wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production <<< "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
           
-          # Deploy to production environment
+          # Deploy bundled file
           wrangler deploy --env production
-          
-          echo "Deployment to production complete!"
