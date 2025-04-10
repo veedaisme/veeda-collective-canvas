@@ -23,3 +23,6 @@ name = "veeda-backend-worker"
 # Copy vars here to fix the warning
 [env.production.vars]
 ENVIRONMENT = "production"
+
+[observability.logs]
+enabled = true
