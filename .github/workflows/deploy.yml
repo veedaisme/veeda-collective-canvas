@@ -65,11 +65,32 @@ jobs:
         with:
           deno-version: v1.x
 
+      - name: Bundle Deno application
+        run: |
+          mkdir -p dist
+          deno bundle --config deno.json main.ts dist/worker.js
+        working-directory: ./backend
+
       - name: Install Wrangler
         run: npm install -g wrangler
 
       - name: Check Wrangler version
         run: wrangler --version
+
+      - name: Update wrangler.toml for bundled file
+        run: |
+          # Update main entry point to use the bundled file
+          sed -i 's/main = "main.ts"/main = "dist\/worker.js"/' wrangler.toml
+          
+          # Fix the vars inheritance warning by ensuring vars exist in env.production
+          if grep -q '\[vars\]' wrangler.toml && ! grep -q '\[env\.production\.vars\]' wrangler.toml; then
+            # Extract vars section and add to env.production
+            sed -n '/\[vars\]/,/^\[/p' wrangler.toml | grep -v '^\[' > vars_section.txt
+            sed -i '/\[env.production\]/a\\n[env.production.vars]' wrangler.toml
+            sed -i '/\[env\.production\.vars\]/r vars_section.txt' wrangler.toml
+            rm vars_section.txt
+          fi
+        working-directory: ./backend
 
       - name: Deploy to Cloudflare Workers (Production)
         working-directory: ./backend
@@ -82,7 +103,7 @@ jobs:
           wrangler secret put SUPABASE_ANON_KEY --env production <<< "${{ secrets.SUPABASE_ANON_KEY }}"
           wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production <<< "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
           
-          # Deploy to production environment
+          # Deploy bundled JS file
           wrangler deploy --env production
           
           echo "Deployment to production complete!"

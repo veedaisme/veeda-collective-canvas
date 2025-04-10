@@ -1,60 +1,25 @@
 # backend/wrangler.toml
 
 # A unique name for your Worker. This will form part of its URL.
-name = "veeda-backend" # This seems fine
+name = "veeda-backend"
 
-# The main entry point for your Worker code. Pointing to your modified main.ts
+# The main entry point for your Worker code.
 main = "main.ts"
 
 # Specifies the compatibility date for the Workers runtime.
-compatibility_date = "2024-04-05" # Keep this or update to a newer date if needed
+compatibility_date = "2024-04-05"
 
-# --- VERY IMPORTANT: Enable Deno Compatibility ---
-# This tells the Cloudflare Workers runtime to use the Deno runtime layer.
+# Enable Deno Compatibility
 compatibility_flags = [ "deno", "nodejs_compat" ]
 
-# --- Node.js Compatibility (Optional) ---
-# Add this if any *npm* dependencies specifically require Node.js built-in modules
-# (e.g., 'crypto', 'fs', 'path'). Test if needed. Supabase client might benefit.
-# node_compat = true
-
-# --- Secrets ---
-# Runtime secrets MUST be configured using the Cloudflare dashboard or Wrangler CLI.
-# DO NOT PUT ACTUAL SECRET VALUES HERE.
-# These will be available via `Deno.env.get("SECRET_NAME")` in your Worker code
-# because you are using the "deno" compatibility flag.
-#
-# Example commands to set secrets:
-# wrangler secret put SUPABASE_URL --env production
-# wrangler secret put SUPABASE_ANON_KEY --env production
-# wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production
-# (Remove --env production if not using specific environments)
-#
-# You MUST set these secrets in your Cloudflare Worker settings for the deployed app to work.
-
-# --- Variables ---
-# Non-secret environment variables can be defined here.
-# Use this for things like environment names (development, staging, production)
+# Top-level vars (copy these to env.production.vars as well)
 [vars]
-# EXAMPLE_VAR = "example_value"
-# ENVIRONMENT = "production" # Example
+ENVIRONMENT = "production"
 
-# --- Build ---
-# A build command is generally NOT required for Deno workers using URL/npm imports.
-# [build]
-# command = ""
-
-# --- Environments ---
-# Example for defining different deployment environments (e.g., production, staging)
+# Production environment
 [env.production]
-name = "veeda-backend-worker" # Explicitly set name for production env
-# Add environment-specific secrets or variables via wrangler commands or dashboard.
-# Example: wrangler secret put DB_PASSWORD --env production
-# [env.production.vars]
-# ENVIRONMENT = "production"
+name = "veeda-backend-worker"
 
-# [env.staging]
-# name = "veeda-backend-worker-staging"
-# [env.staging.vars]
-# ENVIRONMENT = "staging"
-# Add staging-specific secrets/vars via wrangler or dashboard
+# Copy vars here to fix the warning
+[env.production.vars]
+ENVIRONMENT = "production"
