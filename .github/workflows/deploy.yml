@@ -60,52 +60,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          deno-version: 2.2.8
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'backend-node/package-lock.json'
 
-      - name: Install esbuild
-        run: npm install -g esbuild
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./backend-node
 
-      - name: Bundle with esbuild
-        working-directory: ./backend
-        run: |
-          esbuild main.ts \
-            --bundle \
-            --format=esm \
-            --outfile=dist/worker.js \
-            --external:__STATIC_CONTENT_MANIFEST \
-            --external:@hono/mod.ts \
-            --external:@hono/middleware.ts \
-            --external:graphql-yoga \
-            --external:@graphql-tools/schema \
-            --external:@supabase/supabase-js
-
-      - name: Update wrangler.toml for bundled file
-        working-directory: ./backend
-        run: |
-          # Copy vars to env.production.vars if needed
-          if grep -q '\[vars\]' wrangler.toml && ! grep -q '\[env\.production\.vars\]' wrangler.toml; then
-            echo -e "\n[env.production.vars]\nENVIRONMENT = \"production\"" >> wrangler.toml
-          fi
-          
-          # Update main entry point
-          sed -i 's/main = "main.ts"/main = "dist\/worker.js"/' wrangler.toml
-
-      - name: Install Wrangler
-        run: npm install -g wrangler
-
-      - name: Deploy to Cloudflare Workers
-        working-directory: ./backend
+      - name: Deploy to Cloudflare Workers (Production)
+        working-directory: ./backend-node
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # Set secrets in Cloudflare Workers
-          wrangler secret put SUPABASE_URL --env production <<< "${{ secrets.SUPABASE_URL }}"
-          wrangler secret put SUPABASE_ANON_KEY --env production <<< "${{ secrets.SUPABASE_ANON_KEY }}"
-          wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production <<< "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          npx wrangler secret put SUPABASE_URL --env production <<< "${{ secrets.SUPABASE_URL }}"
+          npx wrangler secret put SUPABASE_ANON_KEY --env production <<< "${{ secrets.SUPABASE_ANON_KEY }}"
+          npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production <<< "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
           
-          # Deploy bundled file
-          wrangler deploy --env production
+          # Deploy to production environment
+          npx wrangler deploy --env production
+          
+          echo "Deployment to production complete!"

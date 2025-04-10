@@ -1,0 +1,12 @@
+name = "veeda-backend-worker"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+
+[vars]
+ENVIRONMENT = "production"
+
+[env.production]
+name = "veeda-backend-worker"
+
+[env.production.vars]
+ENVIRONMENT = "production"
