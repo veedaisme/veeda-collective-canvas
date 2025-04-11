@@ -84,3 +84,27 @@ CREATE POLICY "Can update own connections" ON public.connections
 
 CREATE POLICY "Can delete own connections" ON public.connections
   FOR DELETE USING (auth.uid() = user_id);
+
+-- === Public/Private Sharing Policies ===
+
+-- Canvases: Anyone can view if is_public = true
+CREATE POLICY "Can view public canvases" ON public.canvases
+  FOR SELECT USING (is_public = true);
+
+-- Blocks: Anyone can view if their canvas is public
+CREATE POLICY "Can view blocks of public canvases" ON public.blocks
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.canvases c
+      WHERE c.id = canvas_id AND c.is_public = true
+    )
+  );
+
+-- Connections: Anyone can view if their canvas is public
+CREATE POLICY "Can view connections of public canvases" ON public.connections
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.canvases c
+      WHERE c.id = canvas_id AND c.is_public = true
+    )
+  );

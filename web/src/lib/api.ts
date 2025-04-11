@@ -102,6 +102,7 @@ const GET_CANVAS_BY_ID_QUERY = gql`
   query GetCanvasById($id: ID!) {
     canvas(id: $id) {
       id
+      userId
       title
       isPublic
       createdAt
@@ -193,6 +194,17 @@ const UPDATE_BLOCK_CONTENT_MUTATION = gql`
     }
 `;
 
+// --- Canvas Visibility Mutation ---
+const UPDATE_CANVAS_VISIBILITY_MUTATION = gql`
+    mutation UpdateCanvasVisibility($id: ID!, $isPublic: Boolean!) {
+        updateCanvasVisibility(id: $id, isPublic: $isPublic) {
+            id
+            isPublic
+            updatedAt
+        }
+    }
+`;
+
 const UPDATE_BLOCK_NOTES_MUTATION = gql`
     mutation UpdateBlockNotes($blockId: ID!, $notes: String!) {
         updateBlockNotes(blockId: $blockId, notes: $notes) {
@@ -202,6 +214,16 @@ const UPDATE_BLOCK_NOTES_MUTATION = gql`
         }
     }
 `;
+
+// --- API Function ---
+export const updateCanvasVisibility = async (variables: { id: string; isPublic: boolean }): Promise<Pick<Canvas, 'id' | 'isPublic' | 'updatedAt'>> => {
+    // Use the authenticated request function
+    const data = await makeAuthenticatedRequest<{ updateCanvasVisibility: Pick<Canvas, 'id' | 'isPublic' | 'updatedAt'> }>(
+        UPDATE_CANVAS_VISIBILITY_MUTATION,
+        variables
+    );
+    return data.updateCanvasVisibility;
+};
 
 // --- API Functions ---
 

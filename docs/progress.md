@@ -156,6 +156,20 @@
     *   Simplified the main `CanvasViewPage` component to use these hooks, improving modularity and readability.
     *   Fixed single/double-click handling conflict on nodes.
 
+## April 11, 2025
+
+*   **Milestone:** Public/Private Toggle for Canvases Implemented.
+    *   Added RLS (Row Level Security) policies in Supabase to allow anyone to SELECT canvases, blocks, and connections if the parent canvas is public (`is_public = true`).
+    *   Updated `backend/src/data/migrations/001_init.sql` to include:
+        *   `CREATE POLICY "Can view public canvases"` on `canvases`
+        *   `CREATE POLICY "Can view blocks of public canvases"` on `blocks`
+        *   `CREATE POLICY "Can view connections of public canvases"` on `connections`
+    *   Added `updateCanvasVisibility` mutation to GraphQL schema (`backend/src/graphql/schema.ts`).
+    *   Implemented `updateCanvasVisibilityRecord` data access function in `backend/src/data/db.ts`.
+    *   Added resolver for `updateCanvasVisibility` in `backend/src/graphql/resolvers.ts`.
+    *   Enforced that when a canvas is public, all its blocks and connections are also public (viewable by anyone with the link).
+    *   This enables the MVP sharing requirements: users can toggle a canvas public/private, generate a shareable link, and anyone with the link can view the canvas (read-only).
+
 ## April 10, 2025
 
 *   **Fix:** Resolved TypeScript import errors in `backend-node/src/server.ts`.

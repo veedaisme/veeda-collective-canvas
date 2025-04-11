@@ -30,6 +30,8 @@ export const typeDefs = `
     createCanvas(title: String): Canvas
     """Updates the title of an existing canvas"""
     updateCanvasTitle(id: ID!, title: String!): Canvas
+    """Updates the public/private visibility of a canvas"""
+    updateCanvasVisibility(id: ID!, isPublic: Boolean!): Canvas
 
     """Creates a new block within a specific canvas"""
     createBlock(canvasId: ID!, type: String!, position: PositionInput!, content: JSON): Block # Use JSON
@@ -55,6 +57,7 @@ export const typeDefs = `
 
   type Canvas {
     id: ID!
+    userId: ID!
     title: String!
     isPublic: Boolean!
     createdAt: DateTime!

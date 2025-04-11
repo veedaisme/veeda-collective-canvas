@@ -207,6 +207,43 @@ export const updateCanvasRecord = async (id: string, data: { title: string }, co
     return mapCanvasRowToRecord(updatedData);
 };
 
+// Accept context to use request-specific client
+export const updateCanvasVisibilityRecord = async (
+    id: string,
+    isPublic: boolean,
+    context: ResolverContext
+): Promise<CanvasRecord | null> => {
+    console.log(`[DB] Updating canvas visibility for ${id} to ${isPublic}`);
+    const db = context.supabase;
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for updateCanvasVisibilityRecord`);
+
+    // RLS policy ensures only owner can update
+    const { data: updatedData, error } = await db
+        .from('canvases')
+        .update({
+            is_public: isPublic,
+            // updated_at is handled by trigger
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') {
+            console.warn(`[DB] Canvas ${id} not found or user lacks permission to update visibility.`);
+            return null;
+        }
+        console.error(`[DB] Error updating canvas visibility ${id}:`, error);
+        throw new Error(`Failed to update canvas visibility: ${error.message}`);
+    }
+    if (!updatedData) {
+        console.warn(`[DB] Canvas ${id} not found or no data returned after visibility update attempt.`);
+        return null;
+    }
+
+    return mapCanvasRowToRecord(updatedData);
+};
+
 // Helper function to map Supabase BlockRow to our BlockRecord format
 function mapBlockRowToRecord(row: BlockRow): BlockRecord {
     return {

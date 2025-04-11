@@ -34,6 +34,7 @@ interface CanvasWorkspaceProps {
     onEdgesDelete: (deletedEdges: Edge[]) => void;
     showUndo?: (blockId: string) => void;
     onBackgroundDoubleClick?: (position: { x: number, y: number }) => void;
+    readOnly?: boolean;
 }
 
 export function CanvasWorkspace({
@@ -47,7 +48,8 @@ export function CanvasWorkspace({
     onNodeDoubleClick,
     onConnect,
     onEdgesDelete,
-    onBackgroundDoubleClick
+    onBackgroundDoubleClick,
+    readOnly = false
 }: CanvasWorkspaceProps) {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -61,6 +63,7 @@ export function CanvasWorkspace({
     
     const handlePaneDoubleClick = useCallback(
         (event: React.MouseEvent) => {
+            if (readOnly) return;
             if (!onBackgroundDoubleClick || !reactFlowInstance || !reactFlowWrapper.current) return;
             
             const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
@@ -71,7 +74,7 @@ export function CanvasWorkspace({
             
             onBackgroundDoubleClick(position);
         },
-        [onBackgroundDoubleClick, reactFlowInstance]
+        [onBackgroundDoubleClick, reactFlowInstance, readOnly]
     );
 
     const fitViewOptions: FitViewOptions = {
@@ -88,12 +91,6 @@ export function CanvasWorkspace({
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
-                onNodeDragStart={onNodeDragStart}
-                onNodeDragStop={onNodeDragStop}
-                onNodeClick={onNodeClick}
-                onNodeDoubleClick={onNodeDoubleClick}
-                onConnect={handleConnect}
-                onEdgesDelete={onEdgesDelete}
                 onDoubleClick={handlePaneDoubleClick}
                 onInit={setReactFlowInstance}
                 zoomOnDoubleClick={false}
@@ -101,6 +98,17 @@ export function CanvasWorkspace({
                 fitViewOptions={fitViewOptions}
                 className={styles.reactFlowInstance}
                 nodeTypes={nodeTypes}
+                // Disable editing features if readOnly
+                nodesDraggable={!readOnly}
+                nodesConnectable={!readOnly}
+                elementsSelectable={!readOnly}
+                panOnDrag={!readOnly}
+                onNodeDragStart={readOnly ? undefined : onNodeDragStart}
+                onNodeDragStop={readOnly ? undefined : onNodeDragStop}
+                onNodeClick={readOnly ? undefined : onNodeClick}
+                onNodeDoubleClick={readOnly ? undefined : onNodeDoubleClick}
+                onConnect={readOnly ? undefined : handleConnect}
+                onEdgesDelete={readOnly ? undefined : onEdgesDelete}
             >
                 <Controls />
                 <MiniMap nodeStrokeWidth={3} zoomable pannable />

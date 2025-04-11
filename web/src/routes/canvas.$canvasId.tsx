@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import 'reactflow/dist/style.css';
 
 // UI Components
@@ -12,7 +12,7 @@ import { BlockCreationModal } from '../components/BlockCreationModal';
 import { TextContentEditModal } from '../components/TextContentEditModal';
 
 // API, Utils, Constants, Hooks
-import { Block } from '../lib/api';
+import { Block, updateCanvasVisibility } from '../lib/api';
 import { supabase } from '../lib/supabaseClient';
 import { isUrl } from '../lib/utils';
 import { isLinkBlockContent, isTextBlockContent } from '../lib/canvasUtils';
@@ -42,7 +42,6 @@ export const Route = createFileRoute('/canvas/$canvasId')({
 // --- Page Component ---
 function CanvasViewPage() {
   const { canvasId } = Route.useParams();
-  // REMOVED: const reactFlowInstance = useReactFlow(); - Cannot be called here
 
   // --- Hooks ---
   const { canvasData, isCanvasLoading, canvasError } = useCanvasData(canvasId);
@@ -61,7 +60,7 @@ function CanvasViewPage() {
     openContentEditor,
     closeContentEditor,
     isCreatingBlockInput,
-    newBlockPosition, // Position set by handleOpenBlockCreator
+    newBlockPosition,
     handleOpenBlockCreator,
     handleCloseBlockCreator,
     undoBlockId,
@@ -87,15 +86,22 @@ function CanvasViewPage() {
       setSelectedNode,
       handleOpenNotesEditor,
       handleOpenBlockCreator,
-      openContentEditor, // Pass content editor open function
+      openContentEditor,
     }
   );
 
-  // --- Specific Handlers using Hook Results ---
+  // --- Auth State for Owner Check ---
+  const [userId, setUserId] = useState<string | null>(null);
+  useState(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id ?? null));
+  });
 
+  // --- Local State for Toggle ---
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
+
+  // --- Handlers ---
   const handleCreateNewBlock = useCallback(() => {
-    // Open the creator modal. Position will be determined on save or by background click.
-    // Pass a default position; it will be updated if triggered by background click.
     handleOpenBlockCreator({ x: 100, y: 100 });
   }, [handleOpenBlockCreator]);
 
@@ -111,8 +117,7 @@ function CanvasViewPage() {
       blockType = 'link';
       blockContent = { url: trimmedInput };
     }
-    // Use newBlockPosition which is managed by useCanvasUIState
-    const finalPosition = newBlockPosition || { x: 150, y: 150 }; // Fallback position
+    const finalPosition = newBlockPosition || { x: 150, y: 150 };
     mutations.performCreateBlock({ canvasId, type: blockType, position: finalPosition, content: blockContent });
     handleCloseBlockCreator();
   }, [canvasId, newBlockPosition, mutations.performCreateBlock, handleCloseBlockCreator]);
@@ -123,7 +128,28 @@ function CanvasViewPage() {
     handleCloseNotesEditor();
   }, [editingNotesBlockId, mutations.performUpdateBlockNotes, handleCloseNotesEditor]);
 
-  // --- Sidebar Content Renderer ---
+  // --- Visibility Toggle Handler ---
+  const handleToggleVisibility = async () => {
+    if (!canvasData) return;
+    setIsUpdatingVisibility(true);
+    setVisibilityError(null);
+    try {
+      const updated = await updateCanvasVisibility({ id: canvasData.id, isPublic: !canvasData.isPublic });
+      // Optimistically update UI (or refetch)
+      canvasData.isPublic = updated.isPublic;
+    } catch (err: any) {
+      setVisibilityError(err?.message || "Failed to update visibility");
+    } finally {
+      setIsUpdatingVisibility(false);
+    }
+  };
+
+  // --- Owner and View-Only Logic ---
+  const isOwner = userId && canvasData && (userId === (canvasData as any).userId);
+  const isPublic = canvasData?.isPublic;
+  const showViewOnlyBanner = !isOwner && isPublic;
+
+  // --- Render Sheet Content (unchanged) ---
   const renderSheetContent = () => {
     if (!selectedNode) return null;
     const blockData = selectedNode.data.rawBlock as Block | undefined;
@@ -203,6 +229,34 @@ function CanvasViewPage() {
 
   return (
     <div className={styles.pageContainer}>
+      {/* Public/Private Toggle and View Only Banner */}
+      <div className={styles.visibilityBar}>
+        {isOwner && (
+          <div className={styles.visibilityToggle}>
+            <label>
+              <input
+                type="checkbox"
+                checked={!!canvasData.isPublic}
+                onChange={handleToggleVisibility}
+                disabled={isUpdatingVisibility}
+              />
+              {canvasData.isPublic ? "Public" : "Private"}
+            </label>
+            {isUpdatingVisibility && <span className={styles.visibilityStatus}>Updating...</span>}
+            {visibilityError && <span className={styles.visibilityError}>{visibilityError}</span>}
+            {canvasData.isPublic && (
+              <span className={styles.shareLink}>
+                Shareable Link: <input type="text" readOnly value={window.location.href} style={{ width: 280 }} onFocus={e => e.target.select()} />
+              </span>
+            )}
+          </div>
+        )}
+        {showViewOnlyBanner && (
+          <div className={styles.viewOnlyBanner}>
+            <strong>View Only:</strong> This canvas is public and you are not the owner. Editing is disabled.
+          </div>
+        )}
+      </div>
       <CanvasHeader
         initialCanvas={canvasData}
         onCreateBlock={handleCreateNewBlock}
@@ -221,7 +275,8 @@ function CanvasViewPage() {
           onNodeDoubleClick={interactionHandlers.handleNodeDoubleClick}
           onConnect={interactionHandlers.handleConnect}
           onEdgesDelete={interactionHandlers.handleEdgesDelete}
-          onBackgroundDoubleClick={interactionHandlers.handleBackgroundDoubleClick} // Pass handler directly
+          onBackgroundDoubleClick={interactionHandlers.handleBackgroundDoubleClick}
+          readOnly={showViewOnlyBanner}
         />
       </div>
 

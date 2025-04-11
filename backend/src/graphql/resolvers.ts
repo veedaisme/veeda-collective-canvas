@@ -2,7 +2,7 @@ import {
     getCanvasesByUserId, getCanvasById, createCanvasRecord, updateCanvasRecord,
     getBlocksByCanvasId, getBlockById, createBlockRecord,
     updateBlockRecordPosition, updateBlockRecordContent,
-    updateBlockRecordNotes,
+    updateBlockRecordNotes, updateCanvasVisibilityRecord,
     type CanvasRecord, type BlockRecord, type ConnectionRecord,
     createConnectionRecord, deleteConnectionRecord,
     listConnectionsByCanvas
@@ -117,6 +117,22 @@ export const resolvers = {
             });
         }
         // Map internal record to GraphQL type if needed
+        return updatedCanvas;
+    },
+
+    // updateCanvasVisibility resolver
+    updateCanvasVisibility: async (_parent: unknown, { id, isPublic }: { id: string; isPublic: boolean }, context: ResolverContext) => {
+        const userId = getUserIdFromContext(context);
+        console.log(`Resolving: updateCanvasVisibility for ID: ${id} by user ${userId} to isPublic=${isPublic}`);
+        // RLS handles authorization/existence check at DB level
+        const updatedCanvas = await updateCanvasVisibilityRecord(id, isPublic, context);
+
+        if (!updatedCanvas) {
+            console.log(`Update visibility failed: Canvas ${id} not found or user ${userId} lacks permission.`);
+            throw new GraphQLError('Canvas not found or update forbidden', {
+                extensions: { code: 'NOT_FOUND_OR_FORBIDDEN', canvasId: id },
+            });
+        }
         return updatedCanvas;
     },
 
