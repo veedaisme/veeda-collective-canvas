@@ -8,7 +8,7 @@ interface CanvasHeaderProps {
     initialCanvas: Canvas;
     onCreateBlock: () => void; // Callback to trigger block creation
     isCreatingBlock: boolean;
-    isOwner: boolean;
+    isOwner: string | boolean | null | undefined;
 }
 
 export function CanvasHeader({ initialCanvas, onCreateBlock, isCreatingBlock, isOwner }: CanvasHeaderProps) {
