@@ -207,9 +207,11 @@ function CanvasViewPage() {
                 <div className={styles.notesSection}>
                     <h4>Notes / Reflections:</h4>
                     <p className={styles.notesContent}>{blockData.notes || '(No notes yet)'}</p>
-                    <Button variant="outline" size="sm" onClick={() => handleOpenNotesEditor(blockData.id, blockData.notes || '')}>
+                    {isOwner && (
+                      <Button variant="outline" size="sm" onClick={() => handleOpenNotesEditor(blockData.id, blockData.notes || '')}>
                         Edit Notes
-                    </Button>
+                      </Button>
+                    )}
                 </div>
             </div>
         </>
@@ -227,40 +229,45 @@ function CanvasViewPage() {
     return <div>Canvas not found or failed to load.</div>;
   }
 
+  const sharingToggleEnabled = import.meta.env.VITE_CANVAS_SHARING_TOGGLE === 'true';
+
   return (
     <div className={styles.pageContainer}>
       {/* Public/Private Toggle and View Only Banner */}
-      <div className={styles.visibilityBar}>
-        {isOwner && (
-          <div className={styles.visibilityToggle}>
-            <label>
-              <input
-                type="checkbox"
-                checked={!!canvasData.isPublic}
-                onChange={handleToggleVisibility}
-                disabled={isUpdatingVisibility}
-              />
-              {canvasData.isPublic ? "Public" : "Private"}
-            </label>
-            {isUpdatingVisibility && <span className={styles.visibilityStatus}>Updating...</span>}
-            {visibilityError && <span className={styles.visibilityError}>{visibilityError}</span>}
-            {canvasData.isPublic && (
-              <span className={styles.shareLink}>
-                Shareable Link: <input type="text" readOnly value={window.location.href} style={{ width: 280 }} onFocus={e => e.target.select()} />
-              </span>
-            )}
-          </div>
-        )}
-        {showViewOnlyBanner && (
-          <div className={styles.viewOnlyBanner}>
-            <strong>View Only:</strong> This canvas is public and you are not the owner. Editing is disabled.
-          </div>
-        )}
-      </div>
+      {sharingToggleEnabled && (
+        <div className={styles.visibilityBar}>
+          {isOwner && (
+            <div className={styles.visibilityToggle}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={!!canvasData.isPublic}
+                  onChange={handleToggleVisibility}
+                  disabled={isUpdatingVisibility}
+                />
+                {canvasData.isPublic ? "Public" : "Private"}
+              </label>
+              {isUpdatingVisibility && <span className={styles.visibilityStatus}>Updating...</span>}
+              {visibilityError && <span className={styles.visibilityError}>{visibilityError}</span>}
+              {canvasData.isPublic && (
+                <span className={styles.shareLink}>
+                  Shareable Link: <input type="text" readOnly value={window.location.href} style={{ width: 280 }} onFocus={e => e.target.select()} />
+                </span>
+              )}
+            </div>
+          )}
+          {showViewOnlyBanner && (
+            <div className={styles.viewOnlyBanner}>
+              <strong>View Only:</strong> This canvas is public and you are not the owner. Editing is disabled.
+            </div>
+          )}
+        </div>
+      )}
       <CanvasHeader
         initialCanvas={canvasData}
         onCreateBlock={handleCreateNewBlock}
         isCreatingBlock={mutations.isCreatingBlock}
+        isOwner={isOwner}
       />
       <div className="flex flex-grow overflow-hidden">
         <CanvasWorkspace

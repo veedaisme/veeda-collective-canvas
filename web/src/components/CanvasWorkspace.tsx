@@ -98,14 +98,13 @@ export function CanvasWorkspace({
                 fitViewOptions={fitViewOptions}
                 className={styles.reactFlowInstance}
                 nodeTypes={nodeTypes}
+                onNodeClick={onNodeClick}
                 // Disable editing features if readOnly
                 nodesDraggable={!readOnly}
                 nodesConnectable={!readOnly}
                 elementsSelectable={!readOnly}
-                panOnDrag={!readOnly}
                 onNodeDragStart={readOnly ? undefined : onNodeDragStart}
                 onNodeDragStop={readOnly ? undefined : onNodeDragStop}
-                onNodeClick={readOnly ? undefined : onNodeClick}
                 onNodeDoubleClick={readOnly ? undefined : onNodeDoubleClick}
                 onConnect={readOnly ? undefined : handleConnect}
                 onEdgesDelete={readOnly ? undefined : onEdgesDelete}

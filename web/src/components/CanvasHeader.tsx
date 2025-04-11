@@ -8,9 +8,10 @@ interface CanvasHeaderProps {
     initialCanvas: Canvas;
     onCreateBlock: () => void; // Callback to trigger block creation
     isCreatingBlock: boolean;
+    isOwner: boolean;
 }
 
-export function CanvasHeader({ initialCanvas, onCreateBlock, isCreatingBlock }: CanvasHeaderProps) {
+export function CanvasHeader({ initialCanvas, onCreateBlock, isCreatingBlock, isOwner }: CanvasHeaderProps) {
     const queryClient = useQueryClient();
     const canvasId = initialCanvas.id;
 
@@ -68,38 +69,48 @@ export function CanvasHeader({ initialCanvas, onCreateBlock, isCreatingBlock }: 
         <div className={styles.topBar}>
             <Link to="/" className={styles.backLink}>&laquo; Back to Canvases</Link>
             <div className={styles.titleContainer}>
-                {isEditingTitle ? (
-                    <input
-                        type="text"
-                        value={editTitle}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown}
-                        disabled={isUpdatingTitle}
-                        autoFocus
-                        className={styles.titleInput}
-                    />
-                ) : (
-                    <h2 className={styles.title} onClick={() => setIsEditingTitle(true)} title="Click to edit">{initialCanvas.title}</h2>
-                )}
-                {isEditingTitle ? (
+                {isOwner ? (
                     <>
-                        <button onClick={handleTitleSave} disabled={isUpdatingTitle || !editTitle.trim()} className={styles.saveButton}>
-                            {isUpdatingTitle ? 'Saving...' : 'Save'}
-                        </button>
-                        <button onClick={handleEditToggle} disabled={isUpdatingTitle} className={styles.cancelButton}>
-                            Cancel
-                        </button>
+                        {isEditingTitle ? (
+                            <input
+                                type="text"
+                                value={editTitle}
+                                onChange={handleInputChange}
+                                onKeyDown={handleInputKeyDown}
+                                disabled={isUpdatingTitle}
+                                autoFocus
+                                className={styles.titleInput}
+                            />
+                        ) : (
+                            <h2 className={styles.title} onClick={() => setIsEditingTitle(true)} title="Click to edit">
+                                {initialCanvas.title}
+                            </h2>
+                        )}
+                        {isEditingTitle ? (
+                            <>
+                                <button onClick={handleTitleSave} disabled={isUpdatingTitle || !editTitle.trim()} className={styles.saveButton}>
+                                    {isUpdatingTitle ? 'Saving...' : 'Save'}
+                                </button>
+                                <button onClick={handleEditToggle} disabled={isUpdatingTitle} className={styles.cancelButton}>
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <button onClick={handleEditToggle} className={styles.editButton} title="Edit title">
+                                ✏️
+                            </button>
+                        )}
                     </>
                 ) : (
-                    <button onClick={handleEditToggle} className={styles.editButton} title="Edit title">
-                        ✏️
-                    </button>
+                    <h2 className={styles.title}>{initialCanvas.title}</h2>
                 )}
             </div>
             {updateTitleError && <p className={styles.errorText}>Error: {updateTitleError}</p>}
-            <button onClick={onCreateBlock} disabled={isCreatingBlock} className={styles.createButton}>
-                {isCreatingBlock ? 'Creating Block...' : '+ Add Block'}
-            </button>
+            {isOwner && (
+                <button onClick={onCreateBlock} disabled={isCreatingBlock} className={styles.createButton}>
+                    {isCreatingBlock ? 'Creating Block...' : '+ Add Block'}
+                </button>
+            )}
         </div>
     );
-} 
+}
