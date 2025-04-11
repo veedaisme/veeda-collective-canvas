@@ -1,7 +1,7 @@
 import { Link, useRouter } from '@tanstack/react-router'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from "@/components/ui/button"
-import React, { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { PersonIcon } from '@radix-ui/react-icons'
 
 export function MenuBar() {
