@@ -1,12 +1,10 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchMyCanvases, createCanvas, type Canvas } from '@/lib/api'
-import { supabase } from '@/lib/supabaseClient'
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { PlusCircledIcon } from "@radix-ui/react-icons"
-import { formatDistanceToNow } from 'date-fns'
 import { CanvasCard } from "@/components/CanvasCard"
+import { Button } from "@/components/ui/button"
+import { createCanvas, fetchMyCanvases, type Canvas } from '@/lib/api'
+import { supabase } from '@/lib/supabaseClient'
+import { PlusCircledIcon } from "@radix-ui/react-icons"
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
   beforeLoad: async ({ location }) => {
