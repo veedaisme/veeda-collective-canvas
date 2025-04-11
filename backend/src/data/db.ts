@@ -1,5 +1,5 @@
 // src/data/db.ts - Supabase data access functions
-import type { ResolverContext } from '../graphql/resolvers.ts';
+import type { ResolverContext } from '../graphql/resolvers.js';
 // TODO: Ideally, import the generated Database type directly if possible
 // For now, define specific table types based on generated output
 type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
