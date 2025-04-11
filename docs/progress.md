@@ -2,6 +2,14 @@
 
 ## April 11, 2025
 
+*   **Milestone:** Menu Bar UI Revamped to Match v0.dev Reference.
+    *   Created a new `MenuBar` component (`web/src/components/MenuBar.tsx`) with a fixed, modern top bar, brand, navigation links, and a custom user dropdown menu.
+    *   Integrated the menu bar globally in the app layout (`web/src/routes/__root.tsx`).
+    *   The user menu includes Profile, Settings, and Log out, and is accessible via a user icon.
+    *   Navigation links highlight the active route and are responsive.
+    *   All styling and layout closely follow the v0.dev "veeda dashboard" reference.
+    *   The implementation uses only available project UI components and custom logic for dropdowns.
+
 *   **Milestone:** Canvas List UI Refactored to Match v0.dev Reference (No Thumbnails).
     *   Refactored the dashboard canvas list UI (`web/src/routes/index.tsx`) to use a new modular `CanvasCard` component (`web/src/components/CanvasCard.tsx`), matching the v0.dev "veeda dashboard" reference design (minus the thumbnail).
     *   The card grid is now responsive and visually rich, showing title, last modified, block count (with icon), and public/private status (with badge/icon).
