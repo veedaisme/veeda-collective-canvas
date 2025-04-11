@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Veeda Theme CSS Variables */
+:root {
+  --color-background: #fff;
+  --color-foreground: #111;
+  --color-border: #e5e7eb;
+  --color-accent: #ff8800;
+  --color-muted: #6b7280;
+  --color-card: #fff;
+  --color-card-border: #e5e7eb;
+}
+
 /* Keep existing :root styles below if needed for base vars, or remove if Tailwind handles all */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
