@@ -6,9 +6,9 @@ import {
     type CanvasRecord, type BlockRecord, type ConnectionRecord,
     createConnectionRecord, deleteConnectionRecord,
     listConnectionsByCanvas
-} from '../data/db.ts'; // Adjusted import path
-import { GraphQLError } from 'https://esm.sh/graphql@16.8.1'; // Correct CDN import
-import { DateTimeResolver, JSONResolver } from 'https://esm.sh/graphql-scalars@1.23.0'; // Use correct case: JSONResolver
+} from '../data/db'; // Adjusted import path
+import { GraphQLError } from 'graphql'; // Correct CDN import
+import { DateTimeResolver, JSONResolver } from 'graphql-scalars'; // Use correct case: JSONResolver
 import type { User as SupabaseUser } from '@supabase/supabase-js'; // Rename imported User
 import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 
@@ -264,7 +264,7 @@ export const resolvers = {
 
         try {
             // Pass context
-            const newConnection = await createConnectionRecord(args.canvasId, args.sourceBlockId, args.targetBlockId, args.sourceHandle, args.targetHandle, context);
+            const newConnection = await createConnectionRecord(args.canvasId, args.sourceBlockId, args.targetBlockId, context, args.sourceHandle, args.targetHandle);
             // Map internal record to GraphQL type if needed
             return newConnection;
         } catch (error: unknown) {

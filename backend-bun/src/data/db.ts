@@ -1,6 +1,4 @@
 // src/data/db.ts - Supabase data access functions
-import { supabase as _supabase, supabaseAdmin } from '../lib/supabaseClient.ts';
-import { supabase as defaultSupabaseClient } from '../lib/supabaseClient.ts'; // Rename global client
 import type { ResolverContext } from '../graphql/resolvers.ts';
 // TODO: Ideally, import the generated Database type directly if possible
 // For now, define specific table types based on generated output
@@ -100,12 +98,12 @@ function mapCanvasRowToRecord(row: CanvasRow): CanvasRecord {
 }
 
 // Canvases
-export const getCanvasesByUserId = async (userId: string, context?: ResolverContext): Promise<CanvasRecord[]> => {
+export const getCanvasesByUserId = async (userId: string, context: ResolverContext): Promise<CanvasRecord[]> => {
     console.log(`[DB] Getting canvases for user ${userId}`);
     
     // Use the request-specific client from context if available, otherwise default
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for getCanvasesByUserId`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for getCanvasesByUserId`);
 
     const { data, error } = await db
         .from('canvases')
@@ -122,10 +120,10 @@ export const getCanvasesByUserId = async (userId: string, context?: ResolverCont
     return (data || []).map(mapCanvasRowToRecord);
 };
 
-export const getCanvasById = async (id: string, context?: ResolverContext): Promise<CanvasRecord | undefined> => {
+export const getCanvasById = async (id: string, context: ResolverContext): Promise<CanvasRecord | undefined> => {
     console.log(`[DB] Getting canvas by id ${id}`);
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for getCanvasById`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for getCanvasById`);
 
     // RLS policy will handle authorization based on client's auth state
     const { data, error } = await db
@@ -142,7 +140,7 @@ export const getCanvasById = async (id: string, context?: ResolverContext): Prom
     return data ? mapCanvasRowToRecord(data) : undefined;
 };
 
-export const createCanvasRecord = async (data: { userId: string; title?: string }, context?: ResolverContext): Promise<CanvasRecord> => {
+export const createCanvasRecord = async (data: { userId: string; title?: string }, context: ResolverContext): Promise<CanvasRecord> => {
     console.log(`[DB] Creating canvas for user ${data.userId}`);
     const canvasToInsert = {
         user_id: data.userId,
@@ -151,10 +149,10 @@ export const createCanvasRecord = async (data: { userId: string; title?: string 
     };
 
     // Use supabaseAdmin if available in context, otherwise fall back to *request-specific* or default client
-    const db = context?.supabaseAdmin || context?.supabase || defaultSupabaseClient;
+    const db = context.supabaseAdmin || context.supabase;
     
     // Always log which client we're using to help with debugging
-    console.log(`[DB] Using ${db === supabaseAdmin ? 'admin' : (context?.supabase ? 'request-specific' : 'default')} client for canvas creation`);
+    console.log(`[DB] Using ${context.supabaseAdmin ? 'admin' : (context.supabase ? 'request-specific' : 'default')} client for canvas creation`);
 
     const { data: insertedData, error } = await db
         .from('canvases')
@@ -175,11 +173,11 @@ export const createCanvasRecord = async (data: { userId: string; title?: string 
 };
 
 // Accept context to use request-specific client
-export const updateCanvasRecord = async (id: string, data: { title: string }, context?: ResolverContext): Promise<CanvasRecord | null> => {
+export const updateCanvasRecord = async (id: string, data: { title: string }, context: ResolverContext): Promise<CanvasRecord | null> => {
     console.log(`[DB] Updating canvas ${id}`);
     // Use request-specific client if available, otherwise fall back
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateCanvasRecord`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for updateCanvasRecord`);
 
     // Note: RLS policy should ensure user can only update their own canvases
     const { data: updatedData, error } = await db // Use the resolved client
@@ -227,11 +225,11 @@ function mapBlockRowToRecord(row: BlockRow): BlockRecord {
 
 // Blocks
 // Accept context
-export const getBlocksByCanvasId = async (canvasId: string, context?: ResolverContext): Promise<BlockRecord[]> => {
+export const getBlocksByCanvasId = async (canvasId: string, context: ResolverContext): Promise<BlockRecord[]> => {
     console.log(`[DB] Getting blocks for canvas ${canvasId}`);
     // Use request-specific client
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for getBlocksByCanvasId`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for getBlocksByCanvasId`);
     // Note: RLS policy should ensure user can only fetch blocks for canvases they have access to
     const { data, error } = await db // Use resolved client
         .from('blocks')
@@ -246,11 +244,11 @@ export const getBlocksByCanvasId = async (canvasId: string, context?: ResolverCo
 };
 
 // Accept context
-export const getBlockById = async (id: string, context?: ResolverContext): Promise<BlockRecord | undefined> => {
+export const getBlockById = async (id: string, context: ResolverContext): Promise<BlockRecord | undefined> => {
     console.log(`[DB] Getting block by id ${id}`);
      // Use request-specific client
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for getBlockById`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for getBlockById`);
     // Note: RLS policy applies here as well
     const { data, error } = await db // Use resolved client
         .from('blocks')
@@ -274,11 +272,11 @@ export const createBlockRecord = async (data: {
     content?: unknown;
     // Optional size, might default in DB or here
     size?: { width: number; height: number };
-}, context?: ResolverContext): Promise<BlockRecord> => {
+}, context: ResolverContext): Promise<BlockRecord> => {
     console.log(`[DB] Creating block for canvas ${data.canvasId}`);
     // Use request-specific client
-    const db = context?.supabase || defaultSupabaseClient;
-     console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for createBlockRecord`);
+    const db = context.supabase
+     console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for createBlockRecord`);
     // Note: RLS ensures user can only insert into canvases they own
     const blockToInsert = {
         canvas_id: data.canvasId,
@@ -310,11 +308,11 @@ export const createBlockRecord = async (data: {
 };
 
 // Accept context
-export const updateBlockRecordPosition = async (id: string, position: { x: number; y: number }, context?: ResolverContext): Promise<BlockRecord | null> => {
+export const updateBlockRecordPosition = async (id: string, position: { x: number; y: number }, context: ResolverContext): Promise<BlockRecord | null> => {
     console.log(`[DB] Updating block position ${id}`);
     // Use request-specific client
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateBlockRecordPosition`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for updateBlockRecordPosition`);
     // Note: RLS policy ensures user can only update blocks in their own canvases
     if (typeof position?.x !== 'number' || typeof position?.y !== 'number') {
         console.error(`[DB] Invalid position data for block ${id}:`, position);
@@ -350,10 +348,10 @@ export const updateBlockRecordPosition = async (id: string, position: { x: numbe
 };
 
 // Accept context
-export const updateBlockRecordContent = async (id: string, content: unknown, context?: ResolverContext): Promise<BlockRecord | null> => {
+export const updateBlockRecordContent = async (id: string, content: unknown, context: ResolverContext): Promise<BlockRecord | null> => {
     console.log(`[DB] Updating content for block ${id}`);
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateBlockRecordContent`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for updateBlockRecordContent`);
 
     // RLS handles authorization
     const { data: updatedData, error } = await db
@@ -380,10 +378,10 @@ export const updateBlockRecordContent = async (id: string, content: unknown, con
 };
 
 // Update Block Notes
-export const updateBlockRecordNotes = async (id: string, notes: string, context?: ResolverContext): Promise<BlockRecord | null> => {
+export const updateBlockRecordNotes = async (id: string, notes: string, context: ResolverContext): Promise<BlockRecord | null> => {
     console.log(`[DB] Updating notes for block ${id}`);
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for updateBlockRecordNotes`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for updateBlockRecordNotes`);
 
     // RLS handles authorization
     const { data: updatedData, error } = await db
@@ -435,14 +433,14 @@ export const createConnectionRecord = async (
     canvasId: string,
     sourceBlockId: string,
     targetBlockId: string,
+    context: ResolverContext,
     sourceHandle?: string | null,
     targetHandle?: string | null,
-    context?: ResolverContext
 ): Promise<ConnectionRecord> => {
     console.log(`[DB] Creating connection between ${sourceBlockId} and ${targetBlockId} on canvas ${canvasId}`);
     // Use request-specific client
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for createConnectionRecord`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for createConnectionRecord`);
     // Note: RLS policy applies
     const connectionToInsert = {
         canvas_id: canvasId,
@@ -475,10 +473,10 @@ export const createConnectionRecord = async (
 };
 
 // Accept context
-export const deleteConnectionRecord = async (id: string, context?: ResolverContext): Promise<boolean> => {
+export const deleteConnectionRecord = async (id: string, context: ResolverContext): Promise<boolean> => {
     console.log(`[DB] Deleting connection ${id}`);
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for deleteConnectionRecord`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for deleteConnectionRecord`);
 
     // Perform the delete operation
     const result = await db
@@ -511,11 +509,11 @@ export const deleteConnectionRecord = async (id: string, context?: ResolverConte
 };
 
 // Accept context
-export const listConnectionsByCanvas = async (canvasId: string, context?: ResolverContext): Promise<ConnectionRecord[]> => {
+export const listConnectionsByCanvas = async (canvasId: string, context: ResolverContext): Promise<ConnectionRecord[]> => {
     console.log(`[DB] Listing connections for canvas ${canvasId}`);
     // Use request-specific client
-    const db = context?.supabase || defaultSupabaseClient;
-    console.log(`[DB] Using ${context?.supabase ? 'request-specific' : 'default'} client for listConnectionsByCanvas`);
+    const db = context.supabase
+    console.log(`[DB] Using ${context.supabase ? 'request-specific' : 'default'} client for listConnectionsByCanvas`);
     // Note: RLS policy applies
     const { data, error } = await db // Use resolved client
         .from('connections')

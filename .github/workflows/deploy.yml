@@ -51,38 +51,3 @@ jobs:
           projectName: veeda-web # Replace with your actual Cloudflare Pages project name
           directory: web/dist # The directory containing the built frontend assets
           # gitHubToken: ${{ secrets.GITHUB_TOKEN }} # Optional
-
-  # --- deploy_backend Job (Updated for Wrangler) ---
-  deploy_backend:
-    name: Deploy Backend to Cloudflare Workers
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'backend-node/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: ./backend-node
-
-      - name: Deploy to Cloudflare Workers (Production)
-        working-directory: ./backend-node
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          # Set secrets in Cloudflare Workers
-          npx wrangler secret put SUPABASE_URL --env production <<< "${{ secrets.SUPABASE_URL }}"
-          npx wrangler secret put SUPABASE_ANON_KEY --env production <<< "${{ secrets.SUPABASE_ANON_KEY }}"
-          npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production <<< "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
-          
-          # Deploy to production environment
-          npx wrangler deploy --env production
-          
-          echo "Deployment to production complete!"
