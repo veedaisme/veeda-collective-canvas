@@ -11,6 +11,7 @@ dist/
 # Misc
 .DS_Store
 *.pem
+/v0-reference
 
 # Logs
 *.log
