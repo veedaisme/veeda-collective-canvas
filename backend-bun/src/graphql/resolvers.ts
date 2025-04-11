@@ -79,9 +79,17 @@ export const resolvers = {
     createCanvas: async (_parent: unknown, { title }: { title?: string }, context: ResolverContext) => {
         const userId = getUserIdFromContext(context);
         console.log(`Resolving: createCanvas for user ${userId}`);
+        
+        // Check existing canvas count
+        const existingCanvases = await getCanvasesByUserId(userId, context);
+        if (existingCanvases.length >= 10) {
+            throw new GraphQLError('Canvas limit reached. Maximum 10 canvases allowed.', {
+                extensions: { code: 'CANVAS_LIMIT_REACHED' }
+            });
+        }
+
         // Now passing the context to createCanvasRecord to use the admin client
         const newCanvas = await createCanvasRecord({ userId, title }, context);
-        // Map internal record to GraphQL type if needed
         return newCanvas;
     },
 
