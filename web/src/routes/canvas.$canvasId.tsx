@@ -301,13 +301,12 @@ function CanvasViewPage() {
           isSaving={mutations.isUpdatingNotes}
         />
       )}
-      {isCreatingBlockInput && (
-        <BlockCreationModal
-          onSave={handleBlockCreationSave}
-          onCancel={handleCloseBlockCreator}
-          isSaving={mutations.isCreatingBlock}
-        />
-      )}
+      <BlockCreationModal
+        open={isCreatingBlockInput}
+        onSave={handleBlockCreationSave}
+        onCancel={handleCloseBlockCreator}
+        isSaving={mutations.isCreatingBlock}
+      />
 
       {undoBlockId && (
          <div className={styles.undoNotification}>
