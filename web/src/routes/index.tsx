@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { PlusCircledIcon } from "@radix-ui/react-icons"
 import { formatDistanceToNow } from 'date-fns'
+import { CanvasCard } from "@/components/CanvasCard"
 
 export const Route = createFileRoute('/')({
   beforeLoad: async ({ location }) => {
@@ -93,25 +94,7 @@ function IndexComponent() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {canvases?.map((canvas: Canvas) => (
-              <Card key={canvas.id} className="flex flex-col">
-                <CardHeader>
-                  <CardTitle className="truncate">{canvas.title || 'Untitled Canvas'}</CardTitle>
-                  <CardDescription>
-                    Created {formatDistanceToNow(new Date(canvas.createdAt), { addSuffix: true })}
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="mt-auto">
-                  <Link
-                    to="/canvas/$canvasId"
-                    params={{ canvasId: canvas.id }}
-                    className="w-full"
-                  >
-                    <Button variant="outline" className="w-full">
-                      Open Canvas
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
+              <CanvasCard key={canvas.id} canvas={canvas} />
             ))}
           </div>
         )

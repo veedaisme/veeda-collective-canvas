@@ -1,5 +1,13 @@
 # Project Progress
 
+## April 11, 2025
+
+*   **Milestone:** Canvas List UI Refactored to Match v0.dev Reference (No Thumbnails).
+    *   Refactored the dashboard canvas list UI (`web/src/routes/index.tsx`) to use a new modular `CanvasCard` component (`web/src/components/CanvasCard.tsx`), matching the v0.dev "veeda dashboard" reference design (minus the thumbnail).
+    *   The card grid is now responsive and visually rich, showing title, last modified, block count (with icon), and public/private status (with badge/icon).
+    *   Updated the `Canvas` type and GraphQL query to include `blocksCount` for each canvas.
+    *   Ensured the UI contract and logic remain unchanged, only the presentation is improved.
+
 ## April 7, 2025 (cont.)
 
 *   **Milestone:** Improved UI with Shadcn Sheet and Bug Fixes.

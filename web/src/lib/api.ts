@@ -63,6 +63,7 @@ export interface Canvas {
   createdAt: string; // DateTime scalar serialized as ISO string
   updatedAt: string;
   blocks?: Block[]; // Add blocks relation (optional as it might not always be fetched)
+  blocksCount?: number; // Add blocksCount for dashboard list
 }
 
 // Add Connection type
