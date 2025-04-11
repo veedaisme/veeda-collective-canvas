@@ -62,6 +62,8 @@ export const typeDefs = `
     isPublic: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
+    """Number of blocks in this canvas"""
+    blocksCount: Int!
     """Blocks associated with this canvas"""
     blocks: [Block!] # Add relation to blocks
     """Connections associated with this canvas"""

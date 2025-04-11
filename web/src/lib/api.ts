@@ -92,6 +92,7 @@ const GET_MY_CANVASES_QUERY = gql`
       isPublic
       createdAt
       updatedAt
+      blocksCount
       # Note: blocks are not fetched in the list view for performance
     }
   }

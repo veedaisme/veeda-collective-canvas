@@ -358,6 +358,12 @@ export const resolvers = {
           // Map internal records to GraphQL type if needed
           return blocks;
       },
+      blocksCount: async (parent: CanvasRecord, _args: unknown, context: ResolverContext): Promise<number> => {
+          const _userId = getUserIdFromContext(context); // Check auth
+          // Efficient: just count blocks for this canvas
+          const blocks = await getBlocksByCanvasId(parent.id, context);
+          return blocks.length;
+      },
        // Resolver for Canvas.connections field
        connections: async (parent: CanvasRecord, _args: unknown, context: ResolverContext): Promise<ConnectionRecord[]> => {
             const _userId = getUserIdFromContext(context); // Check auth

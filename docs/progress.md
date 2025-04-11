@@ -158,6 +158,13 @@
 
 ## April 11, 2025
 
+*   **Milestone:** Canvas List Shows Public/Private Status and Block Count.
+    *   Added `blocksCount: Int!` field to `Canvas` type in backend GraphQL schema (`backend/src/graphql/schema.ts`).
+    *   Implemented `blocksCount` resolver in `backend/src/graphql/resolvers.ts` to efficiently return the number of blocks for each canvas.
+    *   Updated frontend GraphQL query (`web/src/lib/api.ts`) to fetch `blocksCount` for each canvas in the list.
+    *   Updated frontend UI to display both the public/private status (`isPublic`) and the number of blocks for each canvas in the canvas list.
+    *   This improves the canvas overview, making it easy to see which canvases are public and how much content they contain at a glance.
+
 *   **Milestone:** Public/Private Toggle for Canvases Implemented.
     *   Added RLS (Row Level Security) policies in Supabase to allow anyone to SELECT canvases, blocks, and connections if the parent canvas is public (`is_public = true`).
     *   Updated `backend/src/data/migrations/001_init.sql` to include:
